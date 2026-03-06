@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Receipts — eTIMS Concierge</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: var(--bg); }
+
+    /* ══ LAYOUT ══ */
+    .layout { display: flex; min-height: 100svh; }
+
+    /* ══ SIDEBAR (matches dashboard) ══ */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--ink-2);
+      position: fixed; top: 0; left: 0; bottom: 0;
+      display: flex; flex-direction: column;
+      z-index: 800;
+      transition: transform .3s var(--ease);
+    }
+    .sidebar-logo {
+      padding: 1.5rem;
+      font-family: var(--ff-display); font-size: 1.25rem; font-weight: 900;
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      letter-spacing: -.02em;
+    }
+    .sidebar-logo .g { color: #69F0AE; }
+    .sidebar-logo .b { color: var(--blue-l); }
+    .sidebar-nav { flex: 1; padding: 1.25rem 0; overflow-y: auto; }
+    .nav-section-label {
+      font-family: var(--ff-mono); font-size: .6rem;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(255,255,255,.25);
+      padding: 1rem 1.25rem .5rem;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: .75rem;
+      padding: .7rem 1.25rem; margin: .1rem .75rem;
+      border-radius: var(--r-md);
+      font-size: .875rem; font-weight: 600;
+      color: rgba(255,255,255,.5);
+      cursor: pointer; transition: all .2s;
+      border: none; background: none; width: calc(100% - 1.5rem);
+      text-align: left; text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.07); color: rgba(255,255,255,.85); }
+    .nav-item.active { background: rgba(105,240,174,.1); color: #69F0AE; }
+    .nav-item .ico { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer { padding: 1.25rem; border-top: 1px solid rgba(255,255,255,.07); }
+    .user-chip { display: flex; align-items: center; gap: .75rem; padding: .75rem; border-radius: var(--r-md); background: rgba(255,255,255,.05); }
+    .avatar { width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; background: linear-gradient(135deg, var(--green-l), var(--blue-m)); display: grid; place-items: center; font-weight: 800; font-size: .9rem; color: #fff; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: .8rem; font-weight: 700; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-org  { font-size: .68rem; color: rgba(255,255,255,.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ══ MAIN ══ */
+    .main { flex: 1; margin-left: 240px; min-height: 100svh; display: flex; flex-direction: column; }
+    @media(max-width:768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: none; }
+      .main { margin-left: 0; }
+    }
+
+    /* ══ TOPBAR ══ */
+    .topbar {
+      height: 64px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 1.75rem; gap: 1rem;
+      position: sticky; top: 0; z-index: 500;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 1rem; flex: 1; }
+    .topbar-title { font-family: var(--ff-display); font-size: 1.15rem; font-weight: 700; }
+    .breadcrumb { display: flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--mist); }
+    .breadcrumb a { color: var(--green); font-weight: 600; }
+    .breadcrumb span { opacity: .4; }
+    .menu-toggle { display: none; flex-direction: column; gap: 4px; padding: .5rem; }
+    .menu-toggle span { display: block; width: 20px; height: 2px; background: var(--slate); border-radius: 2px; }
+    @media(max-width:768px) { .menu-toggle { display: flex; } }
+
+    /* ══ PAGE CONTENT ══ */
+    .page-content { padding: 1.75rem; flex: 1; }
+    .page-header { margin-bottom: 1.75rem; }
+    .page-header h1 { font-family: var(--ff-display); font-size: 1.6rem; margin-bottom: .3rem; }
+    .page-header p { font-size: .875rem; color: var(--mist); }
+
+    /* ══ TWO-COLUMN LAYOUT ══ */
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    @media(max-width: 1100px) { .upload-grid { grid-template-columns: 1fr; } }
+
+    /* ══ DROP ZONE ══ */
+    .drop-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .drop-card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .drop-card-header h3 { font-size: .95rem; }
+    .count-badge {
+      background: var(--green-pale); color: var(--green-d);
+      font-family: var(--ff-mono); font-size: .72rem; font-weight: 700;
+      padding: .2rem .65rem; border-radius: 100px;
+    }
+
+    .drop-zone {
+      margin: 1.5rem;
+      border: 2px dashed var(--border);
+      border-radius: var(--r-lg);
+      padding: 3rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s var(--ease);
+      position: relative;
+      background: var(--bg);
+    }
+    .drop-zone:hover, .drop-zone.dragging {
+      border-color: var(--green);
+      background: var(--green-pale);
+    }
+    .drop-zone.dragging .drop-icon { transform: scale(1.1) translateY(-4px); }
+    #mainFileInput {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon {
+      font-size: 3rem; margin-bottom: 1rem;
+      transition: transform .3s var(--ease-spring);
+      display: block;
+    }
+    .drop-zone h4 { font-size: 1rem; margin-bottom: .4rem; color: var(--ink); }
+    .drop-zone p  { font-size: .825rem; color: var(--mist); margin: 0; }
+    .drop-zone .formats {
+      display: flex; gap: .5rem; justify-content: center; flex-wrap: wrap;
+      margin-top: .85rem;
+    }
+    .format-tag {
+      font-family: var(--ff-mono); font-size: .65rem; font-weight: 600;
+      padding: .2rem .55rem; border-radius: 4px;
+      background: rgba(13,17,23,.06); color: var(--slate);
+      letter-spacing: .04em;
+    }
+    .drop-zone-actions {
+      display: flex; gap: .75rem; justify-content: center; margin-top: 1.25rem;
+    }
+
+    /* ══ QUEUE ══ */
+    .queue { padding: 0 1.5rem 1.5rem; }
+    .queue-empty {
+      text-align: center; padding: 2rem;
+      color: var(--mist); font-size: .875rem;
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    }
+    .queue-empty .ico { font-size: 2rem; opacity: .3; }
+
+    .queue-item {
+      display: grid;
+      grid-template-columns: 64px 1fr auto;
+      gap: 1rem; align-items: center;
+      padding: .9rem;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      margin-bottom: .65rem;
+      background: var(--surface);
+      transition: border-color .2s, box-shadow .2s;
+      cursor: pointer;
+    }
+    .queue-item:hover { border-color: rgba(46,125,50,.3); box-shadow: 0 2px 12px rgba(46,125,50,.08); }
+    .queue-item.selected { border-color: var(--green); background: var(--green-pale); box-shadow: 0 0 0 3px rgba(46,125,50,.1); }
+    .queue-item.uploading { border-color: var(--blue-m); }
+    .queue-item.success { border-color: var(--green); }
+    .queue-item.error { border-color: var(--danger); background: var(--danger-pale); }
+
+    .thumb {
+      width: 64px; height: 64px;
+      border-radius: var(--r-sm); overflow: hidden;
+      background: var(--bg); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.75rem;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .thumb .pdf-icon { font-size: 1.5rem; }
+    .thumb-overlay {
+      position: absolute; inset: 0;
+      background: rgba(13,17,23,.5);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .queue-meta { min-width: 0; }
+    .queue-name { font-size: .85rem; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .2rem; }
+    .queue-size { font-size: .72rem; color: var(--mist); font-family: var(--ff-mono); }
+    .queue-progress { margin-top: .4rem; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .queue-progress-fill { height: 100%; background: linear-gradient(90deg, var(--green-l), var(--blue-m)); width: 0; transition: width .3s var(--ease); }
+
+    .queue-status { flex-shrink: 0; text-align: right; }
+    .q-badge {
+      font-size: .65rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+      padding: .25rem .6rem; border-radius: 100px; white-space: nowrap;
+    }
+    .q-badge.waiting    { background: #F0F2F4; color: var(--slate); }
+    .q-badge.uploading  { background: var(--blue-pale); color: var(--blue); }
+    .q-badge.success    { background: var(--green-pale); color: var(--green-d); }
+    .q-badge.error      { background: var(--danger-pale); color: var(--danger); }
+    .q-remove { display: block; margin-top: .35rem; font-size: .7rem; color: var(--mist); cursor: pointer; text-align: right; }
+    .q-remove:hover { color: var(--danger); }
+
+    /* ══ BATCH ACTIONS ══ */
+    .batch-bar {
+      margin: 0 1.5rem 1.5rem;
+      display: flex; gap: .75rem; align-items: center;
+      padding: 1rem 1.25rem;
+      background: linear-gradient(135deg, var(--ink), var(--ink-2));
+      border-radius: var(--r-md);
+    }
+    .batch-bar span { font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.6); flex: 1; }
+    .batch-bar .btn { font-size: .8rem; padding: .5rem 1.1rem; }
+
+    /* ══ DETAIL PANEL (right column) ══ */
+    .detail-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+      position: sticky; top: 80px;
+    }
+    .detail-panel-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .detail-panel-header h3 { font-size: .95rem; }
+
+    .preview-area {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      min-height: 200px;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+    }
+    .preview-area img { max-width: 100%; max-height: 260px; object-fit: contain; padding: 1rem; }
+    .preview-placeholder {
+      display: flex; flex-direction: column; align-items: center; gap: .75rem;
+      color: var(--mist); padding: 3rem;
+    }
+    .preview-placeholder .ico { font-size: 3rem; opacity: .25; }
+    .preview-placeholder p { font-size: .8rem; text-align: center; }
+
+    /* ══ RECEIPT METADATA FORM ══ */
+    .meta-form { padding: 1.5rem; }
+    .meta-form .form-group { margin-bottom: 1rem; }
+    .meta-form .form-label {
+      font-size: .7rem; font-weight: 700; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--mist);
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: .35rem;
+    }
+    .ai-badge {
+      font-size: .6rem; background: rgba(25,118,210,.1); color: var(--blue-m);
+      padding: .1rem .45rem; border-radius: 100px; font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .meta-input {
+      width: 100%; padding: .65rem .9rem;
+      border: 1.5px solid var(--border); border-radius: var(--r-sm);
+      font-family: var(--ff-body); font-size: .875rem; color: var(--ink);
+      outline: none; transition: border-color .2s, box-shadow .2s;
+    }
+    .meta-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(46,125,50,.08); }
+    .meta-input.ai-filled { border-color: var(--blue-m); background: var(--blue-pale); }
+
+    .meta-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+
+    .vat-row {
+      background: var(--green-pale); border: 1px solid rgba(46,125,50,.15);
+      border-radius: var(--r-sm); padding: .85rem 1rem;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 1rem;
+    }
+    .vat-row .label { font-size: .75rem; font-weight: 700; color: var(--green-d); }
+    .vat-row .value { font-family: var(--ff-mono); font-size: .9rem; font-weight: 700; color: var(--green-d); }
+
+    .submit-row {
+      display: flex; gap: .75rem; padding: 1.25rem 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ══ OCR ANIMATION ══ */
+    .ocr-scan {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    .ocr-line {
+      position: absolute; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--green-l), transparent);
+      animation: scanDown 2s linear infinite;
+      opacity: 0;
+    }
+    .ocr-line.active { opacity: 1; }
+    @keyframes scanDown { from{top:0} to{top:100%} }
+
+    .ocr-corners::before, .ocr-corners::after {
+      content: '';
+      position: absolute;
+      width: 20px; height: 20px;
+      border-color: var(--green-l); border-style: solid;
+    }
+    .ocr-corners::before { top: 8px; left: 8px; border-width: 2px 0 0 2px; }
+    .ocr-corners::after  { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+    /* ══ STATUS STEPS ══ */
+    .pipeline {
+      padding: .75rem 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .pipeline-title { font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--mist); margin-bottom: .85rem; }
+    .steps-row { display: flex; align-items: center; gap: 0; }
+    .pipe-step {
+      display: flex; flex-direction: column; align-items: center; flex: 1;
+      position: relative;
+    }
+    .pipe-step:not(:last-child)::after {
+      content: '';
+      position: absolute; top: 14px; left: 50%; right: -50%;
+      height: 2px; background: var(--border);
+      z-index: 0;
+    }
+    .pipe-step.done::after { background: var(--green); }
+    .pipe-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .75rem; font-weight: 700; z-index: 1;
+      border: 2px solid var(--border); background: var(--surface);
+      color: var(--mist); transition: all .3s;
+    }
+    .pipe-step.done .pipe-dot { background: var(--green); border-color: var(--green); color: #fff; }
+    .pipe-step.active .pipe-dot { background: var(--blue-pale); border-color: var(--blue-m); color: var(--blue-m); animation: pulseDot 1s ease-in-out infinite; }
+    @keyframes pulseDot { 0%,100%{box-shadow:0 0 0 0 rgba(25,118,210,.3)} 50%{box-shadow:0 0 0 6px rgba(25,118,210,0)} }
+    .pipe-label { font-size: .62rem; color: var(--mist); text-align: center; margin-top: .35rem; font-weight: 600; white-space: nowrap; }
+    .pipe-step.done .pipe-label { color: var(--green-d); }
+    .pipe-step.active .pipe-label { color: var(--blue-m); }
+
+    /* ══ SUMMARY ══ */
+    .upload-summary {
+      display: none;
+      background: linear-gradient(135deg, var(--green-pale), rgba(227,242,253,.5));
+      border: 1px solid rgba(46,125,50,.2);
+      border-radius: var(--r-lg); padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      animation: fadeIn .4s var(--ease-out);
+    }
+    .upload-summary.show { display: block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+    .summary-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+    .summary-title { font-family: var(--ff-display); font-size: 1.2rem; color: var(--green-d); margin-bottom: .4rem; }
+    .summary-sub { font-size: .875rem; color: var(--slate); margin-bottom: 1.25rem; }
+    .summary-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .75rem; }
+    .summary-stat { background: #fff; border-radius: var(--r-md); padding: .85rem; }
+    .summary-stat .n { font-family: var(--ff-display); font-size: 1.4rem; color: var(--green-d); line-height: 1; }
+    .summary-stat .l { font-size: .65rem; color: var(--mist); text-transform: uppercase; letter-spacing: .07em; margin-top: .2rem; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="g">eTIMS</span><span class="b">Concierge</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+      <a href="dashboard.html" class="nav-item">
+        <span class="ico">📊</span> Dashboard
+      </a>
+      <button class="nav-item active">
+        <span class="ico">📸</span> Upload Receipts
+      </button>
+      <div class="nav-section-label" style="margin-top:.75rem;">Reports</div>
+      <button class="nav-item" onclick="window.location.href='dashboard.html'">
+        <span class="ico">📋</span> View All Receipts
+      </button>
+      <div class="nav-section-label" style="margin-top:.75rem;">Account</div>
+      <a href="index.html" class="nav-item">
+        <span class="ico">🏠</span> Home
+      </a>
+      <button class="nav-item" onclick="handleLogout()">
+        <span class="ico">🚪</span> Logout
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="avatarInitial">?</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarName">Loading...</div>
+          <div class="user-org"  id="sidebarOrg">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle sidebar">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-left">
+        <div class="breadcrumb">
+          <a href="dashboard.html">Dashboard</a>
+          <span>/</span>
+          <span style="color:var(--ink);font-weight:600;">Upload Receipts</span>
+        </div>
+      </div>
+      <button class="btn btn-danger" style="padding:.45rem 1rem;font-size:.8rem;" onclick="handleLogout()">Logout</button>
+    </div>
+
+    <div class="page-content">
+      <div class="page-header">
+        <h1>Upload Receipts</h1>
+        <p>Upload supplier receipts for KRA eTIMS reverse invoicing. Supports bulk upload — up to 20 files at once.</p>
+      </div>
+
+      <!-- Success summary (shown after all uploads done) -->
+      <div class="upload-summary" id="uploadSummary">
+        <div class="summary-icon">🎉</div>
+        <div class="summary-title">Upload Complete!</div>
+        <div class="summary-sub" id="summaryText">All receipts have been uploaded and queued for processing.</div>
+        <div class="summary-grid">
+          <div class="summary-stat"><div class="n" id="sumTotal">0</div><div class="l">Uploaded</div></div>
+          <div class="summary-stat"><div class="n" id="sumSuccess">0</div><div class="l">Successful</div></div>
+          <div class="summary-stat"><div class="n" id="sumFailed">0</div><div class="l">Failed</div></div>
+        </div>
+        <div style="display:flex;gap:.75rem;justify-content:center;margin-top:1.25rem;">
+          <a href="dashboard.html" class="btn btn-primary">View Dashboard →</a>
+          <button class="btn btn-secondary" onclick="resetUploader()">Upload More</button>
+        </div>
+      </div>
+
+      <div class="upload-grid" id="uploaderGrid">
+
+        <!-- ══ LEFT: Drop zone + Queue ══ -->
+        <div>
+          <div class="drop-card">
+            <div class="drop-card-header">
+              <h3>📁 Receipt Queue</h3>
+              <span class="count-badge" id="queueCount">0 files</span>
+            </div>
+
+            <!-- Drop zone -->
+            <div class="drop-zone" id="dropZone">
+              <input type="file" id="mainFileInput" accept=".jpg,.jpeg,.png,.pdf" multiple />
+              <span class="drop-icon">📂</span>
+              <h4>Drop receipts here</h4>
+              <p>Or click to browse your device</p>
+              <div class="formats">
+                <span class="format-tag">JPG</span>
+                <span class="format-tag">PNG</span>
+                <span class="format-tag">PDF</span>
+                <span class="format-tag">Max 10MB each</span>
+                <span class="format-tag">Up to 20 files</span>
+              </div>
+              <div class="drop-zone-actions">
+                <button class="btn btn-secondary" style="font-size:.8rem;padding:.5rem 1.1rem;" onclick="document.getElementById('mainFileInput').click();event.stopPropagation();">
+                  Browse Files
+                </button>
+              </div>
+            </div>
+
+            <!-- Batch actions bar (shown when files queued) -->
+            <div class="batch-bar" id="batchBar" style="display:none;">
+              <span id="batchLabel">0 files ready to upload</span>
+              <button class="btn btn-ghost" style="font-size:.78rem;padding:.45rem .9rem;" onclick="clearQueue()">Clear All</button>
+              <button class="btn btn-primary" id="uploadAllBtn" onclick="uploadAll()">
+                ⬆ Upload All
+              </button>
+            </div>
+
+            <!-- Queue list -->
+            <div class="queue" id="queueList">
+              <div class="queue-empty" id="queueEmpty">
+                <span class="ico">🗂️</span>
+                <span>No files added yet</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ RIGHT: Detail panel ══ -->
+        <div>
+          <div class="detail-panel" id="detailPanel">
+            <div class="detail-panel-header">
+              <h3>Receipt Details</h3>
+              <span id="detailFileName" style="font-size:.75rem;color:var(--mist);font-family:var(--ff-mono);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            </div>
+
+            <!-- Image preview -->
+            <div class="preview-area" id="previewArea">
+              <div class="preview-placeholder" id="previewPlaceholder">
+                <span class="ico">🧾</span>
+                <p>Select a receipt from the queue<br>to preview and edit details</p>
+              </div>
+              <img id="previewImg" src="" alt="Receipt preview" style="display:none;" />
+              <div class="ocr-scan ocr-corners" id="ocrScan">
+                <div class="ocr-line" id="ocrLine"></div>
+              </div>
+            </div>
+
+            <!-- Processing pipeline -->
+            <div class="pipeline" id="pipelineSection" style="display:none;">
+              <div class="pipeline-title">Processing Pipeline</div>
+              <div class="steps-row">
+                <div class="pipe-step" id="pStep1">
+                  <div class="pipe-dot" id="pDot1">1</div>
+                  <div class="pipe-label">Upload</div>
+                </div>
+                <div class="pipe-step" id="pStep2">
+                  <div class="pipe-dot" id="pDot2">2</div>
+                  <div class="pipe-label">OCR Scan</div>
+                </div>
+                <div class="pipe-step" id="pStep3">
+                  <div class="pipe-dot" id="pDot3">3</div>
+                  <div class="pipe-label">Validate</div>
+                </div>
+                <div class="pipe-step" id="pStep4">
+                  <div class="pipe-dot" id="pDot4">4</div>
+                  <div class="pipe-label">eTIMS Ready</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Metadata form -->
+            <div class="meta-form" id="metaForm">
+              <div class="form-group">
+                <label class="form-label" for="mSupplier">
+                  Supplier Name
+                  <span class="ai-badge">AI</span>
+                </label>
+                <input type="text" id="mSupplier" class="meta-input" placeholder="e.g. Nairobi Hardware Ltd" />
+              </div>
+
+              <div class="meta-row">
+                <div class="form-group">
+                  <label class="form-label" for="mDate">Receipt Date</label>
+                  <input type="date" id="mDate" class="meta-input" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="mInvoiceNo">Invoice No.</label>
+                  <input type="text" id="mInvoiceNo" class="meta-input" placeholder="INV-0001" />
+                </div>
+              </div>
+
+              <div class="meta-row">
+                <div class="form-group">
+                  <label class="form-label" for="mAmount">Amount (KES)</label>
+                  <input type="number" id="mAmount" class="meta-input" placeholder="0.00" step="0.01" min="0" oninput="updateVAT()" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="mSupplierPin">Supplier KRA PIN</label>
+                  <input type="text" id="mSupplierPin" class="meta-input" placeholder="P051234567A" maxlength="11" />
+                </div>
+              </div>
+
+              <div class="vat-row">
+                <span class="label">💰 VAT (16%)</span>
+                <span class="value" id="vatDisplay">KES 0.00</span>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="mNotes">Notes (optional)</label>
+                <input type="text" id="mNotes" class="meta-input" placeholder="e.g. Office supplies, Q1 2025" />
+              </div>
+            </div>
+
+            <div id="noSelectionMsg" style="padding:2rem;text-align:center;color:var(--mist);font-size:.875rem;">
+              <div style="font-size:2.5rem;margin-bottom:.75rem;opacity:.3;">👆</div>
+              Click a receipt in the queue to edit its details before uploading
+            </div>
+
+            <div class="submit-row" id="submitRow" style="display:none;">
+              <button class="btn btn-primary" style="flex:1;" onclick="uploadSelected()">
+                ⬆ Upload This Receipt
+              </button>
+              <button class="btn" style="border:1.5px solid var(--border);color:var(--slate);padding:.7rem 1rem;" onclick="deselectItem()" title="Deselect">✕</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast"><span class="toast-icon" id="toastIcon">✓</span><span id="toast-msg"></span></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ════════════════════════════════════
+   SUPABASE
+════════════════════════════════════ */
+const supabase = window.supabase.createClient(
+  'https://lreoqxryryoaxpirefwn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZW9xeHJ5cnlvYXhwaXJlZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzc5MTQsImV4cCI6MjA4ODI1MzkxNH0.OwfIjz4bI02noE6gpleBPKz_V6dmZvaoCrJIzLBNaQk'
+);
+
+/* ════════════════════════════════════
+   STATE
+════════════════════════════════════ */
+let currentUser = null;
+let userOrg     = null;
+let queue       = [];       // { id, file, status, url, meta, previewUrl }
+let selectedId  = null;
+let uploadStats = { total: 0, success: 0, failed: 0 };
+
+/* ════════════════════════════════════
+   INIT
+════════════════════════════════════ */
+async function init() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) { window.location.href = 'login.html'; return; }
+  currentUser = user;
+
+  try {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*, organizations(*)')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profile) {
+      userOrg = profile.organizations;
+      const name = profile.full_name || user.email;
+      const initials = name.split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
+      document.getElementById('avatarInitial').textContent  = initials;
+      document.getElementById('sidebarName').textContent    = name;
+      document.getElementById('sidebarOrg').textContent     = userOrg?.name || '—';
+    }
+  } catch (err) {
+    console.error('Init error:', err);
+  }
+}
+
+/* ════════════════════════════════════
+   DROP ZONE
+════════════════════════════════════ */
+const dropZone     = document.getElementById('dropZone');
+const mainFileInput = document.getElementById('mainFileInput');
+
+dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragging'); });
+dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragging'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('dragging');
+  addFiles(Array.from(e.dataTransfer.files));
+});
+
+mainFileInput.addEventListener('change', function () {
+  addFiles(Array.from(this.files));
+  this.value = '';
+});
+
+/* ════════════════════════════════════
+   ADD FILES TO QUEUE
+════════════════════════════════════ */
+function addFiles(files) {
+  const VALID = ['image/jpeg','image/jpg','image/png','application/pdf'];
+  const MAX_SIZE = 10 * 1024 * 1024;
+  const MAX_FILES = 20;
+
+  let added = 0;
+  for (const file of files) {
+    if (queue.length >= MAX_FILES) { showToast(`Maximum ${MAX_FILES} files allowed.`, true); break; }
+    if (!VALID.includes(file.type)) { showToast(`${file.name}: Unsupported format.`, true); continue; }
+    if (file.size > MAX_SIZE) { showToast(`${file.name}: Exceeds 10MB limit.`, true); continue; }
+    // Avoid duplicates
+    if (queue.find(q => q.file.name === file.name && q.file.size === file.size)) continue;
+
+    const id = Date.now() + Math.random();
+    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+
+    queue.push({
+      id, file, previewUrl,
+      status: 'waiting',
+      progress: 0,
+      url: null,
+      meta: {
+        supplier_name: stripExt(file.name),
+        receipt_date: '',
+        invoice_no: '',
+        amount: '',
+        supplier_pin: '',
+        notes: ''
+      }
+    });
+    added++;
+  }
+
+  if (added > 0) {
+    renderQueue();
+    updateBatchBar();
+    if (added === 1) selectItem(queue[queue.length - 1].id);
+  }
+}
+
+function stripExt(name) {
+  return name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').trim();
+}
+
+/* ════════════════════════════════════
+   RENDER QUEUE
+════════════════════════════════════ */
+function renderQueue() {
+  const list  = document.getElementById('queueList');
+  const empty = document.getElementById('queueEmpty');
+  const count = document.getElementById('queueCount');
+
+  count.textContent = `${queue.length} file${queue.length !== 1 ? 's' : ''}`;
+
+  if (!queue.length) {
+    list.innerHTML = '<div class="queue-empty" id="queueEmpty"><span class="ico">🗂️</span><span>No files added yet</span></div>';
+    return;
+  }
+
+  list.innerHTML = queue.map(item => {
+    const thumbHtml = item.previewUrl
+      ? `<img src="${item.previewUrl}" alt="thumb" />`
+      : `<span class="pdf-icon">📄</span>`;
+
+    const overlay = item.status === 'uploading'
+      ? `<div class="thumb-overlay">⏳</div>`
+      : item.status === 'success'
+      ? `<div class="thumb-overlay" style="background:rgba(46,125,50,.6);">✓</div>`
+      : item.status === 'error'
+      ? `<div class="thumb-overlay" style="background:rgba(198,40,40,.6);">✕</div>`
+      : '';
+
+    const progressHtml = (item.status === 'uploading')
+      ? `<div class="queue-progress"><div class="queue-progress-fill" id="qpf-${item.id}" style="width:${item.progress}%"></div></div>`
+      : '';
+
+    const badgeText  = { waiting: '⏳ Ready', uploading: '⬆ Uploading', success: '✓ Done', error: '✕ Failed' }[item.status];
+    const badgeClass = item.status;
+
+    const isSelected = selectedId === item.id;
+
+    return `
+      <div class="queue-item ${item.status} ${isSelected ? 'selected' : ''}"
+           id="qi-${item.id}"
+           onclick="selectItem(${item.id})">
+        <div class="thumb">${thumbHtml}${overlay}</div>
+        <div class="queue-meta">
+          <div class="queue-name" title="${esc(item.file.name)}">${esc(item.file.name)}</div>
+          <div class="queue-size">${formatBytes(item.file.size)}</div>
+          ${progressHtml}
+          ${item.meta.supplier_name && item.meta.supplier_name !== stripExt(item.file.name) ? `<div style="font-size:.7rem;color:var(--green-d);font-weight:600;margin-top:.2rem;">📋 ${esc(item.meta.supplier_name)}</div>` : ''}
+        </div>
+        <div class="queue-status">
+          <span class="q-badge ${badgeClass}">${badgeText}</span>
+          ${item.status === 'waiting' ? `<a class="q-remove" onclick="removeItem(event,${item.id})">Remove</a>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ════════════════════════════════════
+   SELECT / DESELECT
+════════════════════════════════════ */
+function selectItem(id) {
+  selectedId = id;
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+
+  // Show preview
+  const previewArea = document.getElementById('previewArea');
+  const previewImg  = document.getElementById('previewImg');
+  document.getElementById('previewPlaceholder').style.display = 'none';
+  document.getElementById('pipelineSection').style.display = 'block';
+
+  if (item.previewUrl) {
+    previewImg.src = item.previewUrl;
+    previewImg.style.display = 'block';
+  } else {
+    previewImg.style.display = 'none';
+    document.getElementById('previewPlaceholder').style.display = 'flex';
+    document.getElementById('previewPlaceholder').innerHTML = '<span class="ico">📄</span><p>PDF file — no preview available</p>';
+  }
+
+  // Populate form
+  document.getElementById('mSupplier').value   = item.meta.supplier_name || '';
+  document.getElementById('mDate').value        = item.meta.receipt_date  || '';
+  document.getElementById('mInvoiceNo').value   = item.meta.invoice_no    || '';
+  document.getElementById('mAmount').value      = item.meta.amount        || '';
+  document.getElementById('mSupplierPin').value = item.meta.supplier_pin  || '';
+  document.getElementById('mNotes').value       = item.meta.notes         || '';
+  updateVAT();
+
+  document.getElementById('detailFileName').textContent = item.file.name;
+  document.getElementById('noSelectionMsg').style.display = 'none';
+  document.getElementById('metaForm').style.display = 'block';
+  document.getElementById('submitRow').style.display = item.status === 'waiting' ? 'flex' : 'none';
+
+  // Pipeline state
+  setPipelineStep(item.status === 'success' ? 4 : item.status === 'uploading' ? 1 : 0);
+
+  renderQueue();
+}
+
+function deselectItem() {
+  selectedId = null;
+  document.getElementById('previewImg').style.display = 'none';
+  document.getElementById('previewPlaceholder').style.display = 'flex';
+  document.getElementById('previewPlaceholder').innerHTML = '<span class="ico">🧾</span><p>Select a receipt from the queue<br>to preview and edit details</p>';
+  document.getElementById('noSelectionMsg').style.display = 'block';
+  document.getElementById('metaForm').style.display = 'none';
+  document.getElementById('submitRow').style.display = 'none';
+  document.getElementById('pipelineSection').style.display = 'none';
+  document.getElementById('detailFileName').textContent = '';
+  renderQueue();
+}
+
+function removeItem(e, id) {
+  e.stopPropagation();
+  const item = queue.find(q => q.id === id);
+  if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  queue = queue.filter(q => q.id !== id);
+  if (selectedId === id) deselectItem();
+  renderQueue();
+  updateBatchBar();
+}
+
+function clearQueue() {
+  queue.filter(q => q.status === 'waiting').forEach(q => {
+    if (q.previewUrl) URL.revokeObjectURL(q.previewUrl);
+  });
+  queue = queue.filter(q => q.status !== 'waiting');
+  if (selectedId && !queue.find(q => q.id === selectedId)) deselectItem();
+  renderQueue();
+  updateBatchBar();
+}
+
+/* ════════════════════════════════════
+   SAVE FORM → STATE
+════════════════════════════════════ */
+function saveFormToItem(id) {
+  const item = queue.find(q => q.id === id);
+  if (!item) return;
+  item.meta = {
+    supplier_name: document.getElementById('mSupplier').value.trim(),
+    receipt_date:  document.getElementById('mDate').value,
+    invoice_no:    document.getElementById('mInvoiceNo').value.trim(),
+    amount:        document.getElementById('mAmount').value,
+    supplier_pin:  document.getElementById('mSupplierPin').value.trim().toUpperCase(),
+    notes:         document.getElementById('mNotes').value.trim()
+  };
+}
+
+// Auto-save on form change
+['mSupplier','mDate','mInvoiceNo','mAmount','mSupplierPin','mNotes'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', () => {
+    if (selectedId) saveFormToItem(selectedId);
+  });
+});
+
+/* ════════════════════════════════════
+   UPLOAD: SINGLE
+════════════════════════════════════ */
+async function uploadSelected() {
+  if (!selectedId) return;
+  saveFormToItem(selectedId);
+  const item = queue.find(q => q.id === selectedId);
+  if (!item || item.status !== 'waiting') return;
+  await uploadItem(item);
+}
+
+async function uploadItem(item) {
+  if (!userOrg?.id) { showToast('Organization not loaded. Please refresh.', true); return; }
+
+  item.status = 'uploading';
+  item.progress = 10;
+  renderQueue();
+  setPipelineStep(1);
+  document.getElementById('submitRow').style.display = 'none';
+  startOcrAnimation();
+
+  try {
+    // 1. Storage upload
+    const ext  = item.file.name.split('.').pop().toLowerCase();
+    const path = `${userOrg.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error: storageError } = await supabase.storage
+      .from('receipts')
+      .upload(path, item.file, { upsert: false });
+
+    if (storageError) throw storageError;
+
+    item.progress = 55;
+    updateQueueProgress(item);
+    setPipelineStep(2);
+
+    // 2. Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('receipts')
+      .getPublicUrl(path);
+
+    item.url = publicUrl;
+
+    // Simulate OCR step (in real app this would be a cloud function)
+    await delay(600);
+    item.progress = 80;
+    updateQueueProgress(item);
+    setPipelineStep(3);
+
+    // 3. Insert DB record
+    const { error: insertError } = await supabase
+      .from('receipts')
+      .insert([{
+        organization_id: userOrg.id,
+        image_url:        publicUrl,
+        supplier_name:    item.meta.supplier_name || item.file.name,
+        amount:           item.meta.amount        ? parseFloat(item.meta.amount) : null,
+        receipt_date:     item.meta.receipt_date  || null,
+        processing_status: 'pending'
+      }]);
+
+    if (insertError) throw insertError;
+
+    item.progress = 100;
+    item.status   = 'success';
+    updateQueueProgress(item);
+    setPipelineStep(4);
+    stopOcrAnimation();
+
+    showToast(`✓ ${item.file.name} uploaded successfully!`);
+    uploadStats.success++;
+  } catch (err) {
+    console.error('Upload error:', err);
+    item.status   = 'error';
+    item.progress = 0;
+    item.errorMsg = err.message;
+    stopOcrAnimation();
+    showToast(`✕ ${item.file.name}: ${err.message}`, true);
+    uploadStats.failed++;
+  }
+
+  uploadStats.total++;
+  renderQueue();
+  updateBatchBar();
+  deselectItem();
+}
+
+/* ════════════════════════════════════
+   UPLOAD: ALL
+════════════════════════════════════ */
+async function uploadAll() {
+  const waiting = queue.filter(q => q.status === 'waiting');
+  if (!waiting.length) { showToast('No files ready to upload.', true); return; }
+
+  uploadStats = { total: 0, success: 0, failed: 0 };
+
+  document.getElementById('uploadAllBtn').disabled = true;
+  document.getElementById('uploadAllBtn').textContent = 'Uploading...';
+
+  for (const item of waiting) {
+    await uploadItem(item);
+  }
+
+  document.getElementById('uploadAllBtn').disabled = false;
+  document.getElementById('uploadAllBtn').textContent = '⬆ Upload All';
+
+  // Show summary
+  const summary = document.getElementById('uploadSummary');
+  document.getElementById('sumTotal').textContent   = uploadStats.total;
+  document.getElementById('sumSuccess').textContent = uploadStats.success;
+  document.getElementById('sumFailed').textContent  = uploadStats.failed;
+  document.getElementById('summaryText').textContent =
+    uploadStats.failed === 0
+      ? `All ${uploadStats.success} receipts uploaded and queued for AI processing.`
+      : `${uploadStats.success} succeeded, ${uploadStats.failed} failed.`;
+  summary.classList.add('show');
+  summary.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function resetUploader() {
+  queue = [];
+  selectedId = null;
+  uploadStats = { total: 0, success: 0, failed: 0 };
+  document.getElementById('uploadSummary').classList.remove('show');
+  deselectItem();
+  renderQueue();
+  updateBatchBar();
+}
+
+/* ════════════════════════════════════
+   PIPELINE STEPS
+════════════════════════════════════ */
+function setPipelineStep(step) {
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById(`pStep${i}`);
+    const d = document.getElementById(`pDot${i}`);
+    s.className = 'pipe-step';
+    d.textContent = i;
+    if (i < step) { s.classList.add('done'); d.textContent = '✓'; }
+    else if (i === step) s.classList.add('active');
+  }
+}
+
+/* ════════════════════════════════════
+   OCR ANIMATION
+════════════════════════════════════ */
+function startOcrAnimation() {
+  document.getElementById('ocrLine').classList.add('active');
+}
+function stopOcrAnimation() {
+  document.getElementById('ocrLine').classList.remove('active');
+}
+
+/* ════════════════════════════════════
+   HELPERS
+════════════════════════════════════ */
+function updateBatchBar() {
+  const waiting = queue.filter(q => q.status === 'waiting');
+  const bar = document.getElementById('batchBar');
+  if (waiting.length > 0) {
+    bar.style.display = 'flex';
+    document.getElementById('batchLabel').textContent = `${waiting.length} file${waiting.length !== 1 ? 's' : ''} ready to upload`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function updateQueueProgress(item) {
+  const fill = document.getElementById(`qpf-${item.id}`);
+  if (fill) fill.style.width = item.progress + '%';
+}
+
+function updateVAT() {
+  const amount = parseFloat(document.getElementById('mAmount').value) || 0;
+  const vat    = amount * 0.16;
+  document.getElementById('vatDisplay').textContent = 'KES ' + vat.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+}
+
+function delay(ms) { return new Promise(res => setTimeout(res, ms)); }
+
+function esc(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+/* ════════════════════════════════════
+   TOAST
+════════════════════════════════════ */
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toastIcon').textContent = isError ? '✕' : '✓';
+  t.style.borderLeft = `4px solid ${isError ? 'var(--danger)' : 'var(--green)'}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4500);
+}
+
+/* ════════════════════════════════════
+   SIDEBAR TOGGLE + LOGOUT
+════════════════════════════════════ */
+document.getElementById('menuToggle').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('open');
+});
+async function handleLogout() {
+  await supabase.auth.signOut();
+  window.location.href = 'login.html';
+}
+
+/* ════════════════════════════════════
+   BOOT
+════════════════════════════════════ */
+init();
+</script>
+</body>
+</html>

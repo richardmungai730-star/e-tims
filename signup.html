@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — eTIMS Concierge</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    body { background: linear-gradient(135deg, #0A1929 0%, #0A2A1F 100%); min-height: 100svh; display: flex; flex-direction: column; }
+    .auth-wrap {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      padding: 5rem 1.5rem 3rem;
+    }
+    .auth-card {
+      width: 100%; max-width: 520px;
+      background: var(--surface);
+      border-radius: var(--r-xl);
+      padding: 2.75rem 2.5rem;
+      box-shadow: var(--shadow-xl);
+      animation: slideUp .5s var(--ease-out) both;
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(32px)} to{opacity:1;transform:none} }
+
+    .auth-logo { text-align: center; margin-bottom: 1.75rem; }
+    .auth-logo a { font-family: var(--ff-display); font-size: 1.5rem; font-weight: 900; letter-spacing: -.02em; }
+    .auth-logo .g { color: var(--green); }
+    .auth-logo .b { color: var(--blue-m); }
+
+    .auth-title { text-align: center; margin-bottom: .5rem; font-size: 1.6rem; }
+    .auth-sub  { text-align: center; color: var(--mist); font-size: .9rem; margin-bottom: 2rem; }
+
+    .divider { display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0; }
+    .divider span { font-size: .75rem; color: var(--mist); white-space: nowrap; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media(max-width:480px) { .form-row { grid-template-columns: 1fr; } }
+
+    .field-hint { font-size: .72rem; color: var(--mist); margin-top: .3rem; font-family: var(--ff-mono); }
+
+    .auth-footer { text-align: center; margin-top: 1.5rem; font-size: .875rem; color: var(--mist); }
+    .auth-footer a { color: var(--green); font-weight: 600; }
+
+    .back-link {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: .8rem; color: rgba(255,255,255,.4);
+      margin-bottom: 1.5rem; transition: color .2s;
+      text-align: center; width: 100%; justify-content: center;
+    }
+    .back-link:hover { color: rgba(255,255,255,.8); }
+
+    .step-bar {
+      display: flex; gap: .4rem; margin-bottom: 2rem;
+    }
+    .step-seg {
+      flex: 1; height: 3px; border-radius: 2px;
+      background: var(--border);
+      transition: background .3s;
+    }
+    .step-seg.active { background: var(--green); }
+
+    .password-wrap { position: relative; }
+    .pass-toggle {
+      position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--mist); font-size: .85rem; padding: .25rem;
+      transition: color .2s;
+    }
+    .pass-toggle:hover { color: var(--slate); }
+    .password-wrap input { padding-right: 2.75rem; }
+
+    .strength-bar { display: flex; gap: .25rem; margin-top: .4rem; }
+    .strength-seg { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background .3s; }
+    .strength-label { font-size: .7rem; color: var(--mist); margin-top: .25rem; }
+  </style>
+</head>
+<body>
+
+<div class="auth-wrap">
+  <div>
+    <a href="index.html" class="back-link">← Back to Home</a>
+    <div class="auth-card">
+      <div class="auth-logo">
+        <a href="index.html"><span class="g">eTIMS</span><span class="b">Concierge</span></a>
+      </div>
+
+      <div class="step-bar">
+        <div class="step-seg active" id="seg1"></div>
+        <div class="step-seg" id="seg2"></div>
+        <div class="step-seg" id="seg3"></div>
+      </div>
+
+      <h1 class="auth-title">🚀 Create Your Account</h1>
+      <p class="auth-sub">Join businesses automating KRA eTIMS compliance</p>
+
+      <div id="alertSuccess" class="alert alert-success">
+        <span>✅</span>
+        <span>Account created successfully! Redirecting to your dashboard...</span>
+      </div>
+      <div id="alertError" class="alert alert-error">
+        <span>❌</span>
+        <span id="errorText">Something went wrong. Please try again.</span>
+      </div>
+
+      <form id="signupForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fullName">Full Name *</label>
+            <input class="form-input" type="text" id="fullName" name="fullName"
+              placeholder="Jane Kamau" autocomplete="name" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="orgName">Company Name *</label>
+            <input class="form-input" type="text" id="orgName" name="orgName"
+              placeholder="Kamau & Co. Ltd" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="tin">KRA TIN *</label>
+          <input class="form-input" type="text" id="tin" name="tin"
+            placeholder="P051234567A"
+            pattern="[A-Z][0-9]{9}[A-Z]"
+            maxlength="11"
+            autocomplete="off"
+            required />
+          <div class="field-hint">Format: 1 letter + 9 digits + 1 letter (e.g. P051234567A)</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">Business Email *</label>
+          <input class="form-input" type="email" id="email" name="email"
+            placeholder="jane@kamauandco.co.ke"
+            autocomplete="email" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password *</label>
+          <div class="password-wrap">
+            <input class="form-input" type="password" id="password" name="password"
+              placeholder="Minimum 6 characters"
+              minlength="6"
+              autocomplete="new-password"
+              required />
+            <button type="button" class="pass-toggle" id="passToggle" aria-label="Toggle password visibility">👁</button>
+          </div>
+          <div class="strength-bar">
+            <div class="strength-seg" id="s1"></div>
+            <div class="strength-seg" id="s2"></div>
+            <div class="strength-seg" id="s3"></div>
+            <div class="strength-seg" id="s4"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel"></div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full btn-lg" id="submitBtn" style="margin-top:.5rem;">
+          Create Account
+        </button>
+      </form>
+
+      <div class="divider"><span>or</span></div>
+      <div class="auth-footer">
+        Already have an account? <a href="login.html">Log in →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  /* ── Supabase ── */
+  const supabase = window.supabase.createClient(
+    'https://lreoqxryryoaxpirefwn.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZW9xeHJ5cnlvYXhwaXJlZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzc5MTQsImV4cCI6MjA4ODI1MzkxNH0.OwfIjz4bI02noE6gpleBPKz_V6dmZvaoCrJIzLBNaQk'
+  );
+
+  /* ── Redirect if already logged in ── */
+  (async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) window.location.href = 'dashboard.html';
+  })();
+
+  /* ── Password toggle ── */
+  document.getElementById('passToggle').addEventListener('click', () => {
+    const inp = document.getElementById('password');
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+  });
+
+  /* ── Password strength ── */
+  document.getElementById('password').addEventListener('input', function () {
+    const v = this.value;
+    const segs = [document.getElementById('s1'), document.getElementById('s2'),
+                  document.getElementById('s3'), document.getElementById('s4')];
+    const label = document.getElementById('strengthLabel');
+    let score = 0;
+    if (v.length >= 6)  score++;
+    if (v.length >= 10) score++;
+    if (/[A-Z]/.test(v) && /[0-9]/.test(v)) score++;
+    if (/[^A-Za-z0-9]/.test(v)) score++;
+    const colors = ['#C62828','#E65100','#F9A825','#2E7D32'];
+    const labels = ['','Weak','Fair','Good','Strong'];
+    segs.forEach((s, i) => { s.style.background = i < score ? colors[score - 1] : ''; });
+    label.textContent = score > 0 ? labels[score] : '';
+    label.style.color = score > 0 ? colors[score - 1] : '';
+  });
+
+  /* ── TIN auto-uppercase ── */
+  document.getElementById('tin').addEventListener('input', function () {
+    this.value = this.value.toUpperCase();
+    updateSteps();
+  });
+
+  /* ── Step progress ── */
+  function updateSteps() {
+    const v1 = document.getElementById('fullName').value && document.getElementById('orgName').value;
+    const v2 = v1 && document.getElementById('tin').value && document.getElementById('email').value;
+    const v3 = v2 && document.getElementById('password').value;
+    document.getElementById('seg1').classList.toggle('active', !!v1);
+    document.getElementById('seg2').classList.toggle('active', !!v2);
+    document.getElementById('seg3').classList.toggle('active', !!v3);
+  }
+  document.querySelectorAll('#signupForm input').forEach(el => el.addEventListener('input', updateSteps));
+
+  /* ── Helpers ── */
+  function showError(msg) {
+    document.getElementById('errorText').textContent = msg;
+    document.getElementById('alertError').classList.add('show');
+    document.getElementById('alertSuccess').classList.remove('show');
+  }
+  function showSuccess() {
+    document.getElementById('alertSuccess').classList.add('show');
+    document.getElementById('alertError').classList.remove('show');
+  }
+  function setLoading(loading) {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = loading;
+    btn.textContent = loading ? 'Creating account...' : 'Create Account';
+  }
+
+  /* ── Validate TIN ── */
+  function validateTIN(tin) {
+    return /^[A-Z][0-9]{9}[A-Z]$/.test(tin);
+  }
+
+  /* ── Submit handler ── */
+  document.getElementById('signupForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+
+    const fullName = document.getElementById('fullName').value.trim();
+    const orgName  = document.getElementById('orgName').value.trim();
+    const tin      = document.getElementById('tin').value.trim().toUpperCase();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+
+    /* Client-side validation */
+    if (!fullName || !orgName || !tin || !email || !password) {
+      showError('Please fill in all required fields.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError('Please enter a valid email address.');
+      document.getElementById('email').classList.add('error');
+      return;
+    }
+    if (!validateTIN(tin)) {
+      showError('KRA TIN must be in format: 1 letter + 9 digits + 1 letter (e.g. P051234567A)');
+      document.getElementById('tin').classList.add('error');
+      return;
+    }
+    if (password.length < 6) {
+      showError('Password must be at least 6 characters.');
+      document.getElementById('password').classList.add('error');
+      return;
+    }
+
+    /* Clear previous errors */
+    document.querySelectorAll('.form-input').forEach(el => el.classList.remove('error'));
+    setLoading(true);
+
+    try {
+      /* 1. Create Supabase auth user */
+      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      if (authError) throw authError;
+
+      const userId = authData.user?.id;
+      if (!userId) throw new Error('User creation failed. Please try again.');
+
+      /* 2. Check if organization with that TIN already exists */
+      let org = null;
+      const { data: existingOrg } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('tin', tin)
+        .maybeSingle();
+
+      if (existingOrg) {
+        org = existingOrg;
+      } else {
+        /* 3. Create new organization */
+        const { data: newOrg, error: orgError } = await supabase
+          .from('organizations')
+          .insert([{ name: orgName, tin: tin, email: email }])
+          .select()
+          .single();
+        if (orgError) throw orgError;
+        org = newOrg;
+      }
+
+      /* 4. Create user profile */
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: userId,
+          organization_id: org.id,
+          full_name: fullName
+        }]);
+      if (profileError) throw profileError;
+
+      /* 5. Success */
+      showSuccess();
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+
+    } catch (err) {
+      console.error('Signup error:', err);
+      let msg = err.message || 'An unexpected error occurred.';
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        msg = 'This email is already registered. Please log in instead.';
+      }
+      showError(msg);
+    } finally {
+      setLoading(false);
+    }
+  });
+
+  /* ── Pre-fill email from URL param ── */
+  const emailParam = new URLSearchParams(window.location.search).get('email');
+  if (emailParam) document.getElementById('email').value = emailParam;
+</script>
+</body>
+</html>

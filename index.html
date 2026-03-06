@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="eTIMS Concierge — Automated reverse invoicing for KRA eTIMS compliance. Save 40+ hours monthly. Built for Kenyan businesses." />
+  <title>eTIMS Concierge — Automate KRA Reverse Invoicing</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100svh;
+      background: linear-gradient(150deg, #0D1117 0%, #0A1929 40%, #0A2A1F 100%);
+      display: flex; align-items: center;
+      padding: 7rem 0 4rem;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 75% 30%, rgba(46,125,50,.25) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 40% at 20% 70%, rgba(25,118,210,.2) 0%, transparent 55%);
+    }
+    .hero-grid {
+      position: relative; z-index: 1;
+      display: grid; gap: 3rem;
+      align-items: center;
+    }
+    @media(min-width:900px) { .hero-grid { grid-template-columns: 1fr 1fr; } }
+
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: .5rem;
+      padding: .4rem 1rem;
+      background: rgba(46,125,50,.15);
+      border: 1px solid rgba(46,125,50,.3);
+      border-radius: 100px;
+      font-family: var(--ff-mono); font-size: .7rem; font-weight: 600;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: #69F0AE;
+      margin-bottom: 1.5rem;
+    }
+    .hero-eyebrow .live-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #69F0AE;
+      animation: blink 2s ease-in-out infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(105,240,174,.4)} 50%{opacity:.5;box-shadow:0 0 0 6px rgba(105,240,174,0)} }
+
+    .hero h1 { color: #fff; margin-bottom: 1.25rem; }
+    .hero h1 em { font-style: italic; color: #69F0AE; }
+
+    .hero-sub {
+      font-size: 1.1rem; line-height: 1.75;
+      color: rgba(255,255,255,.65);
+      max-width: 480px; margin-bottom: 2.5rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .hero-trust {
+      margin-top: 2.5rem;
+      display: flex; gap: 1.5rem; flex-wrap: wrap;
+    }
+    .trust-chip {
+      display: flex; align-items: center; gap: .4rem;
+      font-size: .78rem; font-weight: 600; color: rgba(255,255,255,.45);
+    }
+    .trust-chip .chk { color: #69F0AE; font-size: .8rem; }
+
+    /* Hero visual */
+    .hero-visual {
+      display: flex; justify-content: center; align-items: center;
+    }
+    .dash-mock {
+      width: 100%; max-width: 440px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--r-xl);
+      backdrop-filter: blur(16px);
+      padding: 1.5rem;
+      box-shadow: var(--shadow-xl);
+    }
+    .mock-topbar {
+      display: flex; align-items: center; gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .mock-dots { display: flex; gap: .4rem; }
+    .mock-dots span {
+      width: 10px; height: 10px; border-radius: 50%;
+    }
+    .mock-dots span:nth-child(1) { background: #FF5F56; }
+    .mock-dots span:nth-child(2) { background: #FFBD2E; }
+    .mock-dots span:nth-child(3) { background: #27C93F; }
+    .mock-title { font-family: var(--ff-mono); font-size: .72rem; color: rgba(255,255,255,.3); }
+
+    .mock-stats {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem;
+      margin-bottom: 1.25rem;
+    }
+    .mock-stat {
+      background: rgba(255,255,255,.06);
+      border-radius: var(--r-md);
+      padding: .9rem;
+    }
+    .mock-stat .n { font-family: var(--ff-display); font-size: 1.5rem; color: #69F0AE; line-height: 1; }
+    .mock-stat .l { font-size: .65rem; color: rgba(255,255,255,.4); margin-top: .25rem; text-transform: uppercase; letter-spacing: .07em; }
+
+    .mock-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .7rem .85rem;
+      background: rgba(255,255,255,.04);
+      border-radius: var(--r-sm);
+      margin-bottom: .5rem;
+    }
+    .mock-row:last-child { margin: 0; }
+    .mock-row .sup { font-size: .78rem; color: rgba(255,255,255,.7); font-weight: 600; }
+    .mock-row .amt { font-family: var(--ff-mono); font-size: .75rem; color: rgba(255,255,255,.5); }
+    .mock-row .tag {
+      font-size: .6rem; font-weight: 700;
+      padding: .2rem .55rem; border-radius: 100px;
+      letter-spacing: .06em; text-transform: uppercase;
+    }
+    .tag-done { background: rgba(105,240,174,.15); color: #69F0AE; }
+    .tag-pend { background: rgba(255,167,38,.15); color: #FFB74D; }
+
+    .mock-upload {
+      margin-top: 1rem;
+      border: 1.5px dashed rgba(105,240,174,.3);
+      border-radius: var(--r-md);
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .mock-upload:hover { background: rgba(105,240,174,.05); }
+    .mock-upload .ico { font-size: 1.6rem; margin-bottom: .4rem; }
+    .mock-upload p { font-size: .72rem; color: rgba(255,255,255,.4); }
+
+    /* ─── STATS BAR ─── */
+    .stats-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 0;
+    }
+    .stats-inner {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border); border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+    .stat-item {
+      background: var(--surface);
+      padding: 1.75rem 2rem; text-align: center;
+    }
+    .stat-n {
+      font-family: var(--ff-display);
+      font-size: 2.4rem; line-height: 1;
+      background: linear-gradient(135deg, var(--green-l), var(--blue-m));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: .25rem;
+    }
+    .stat-l { font-size: .78rem; font-weight: 700; color: var(--mist); letter-spacing: .06em; text-transform: uppercase; }
+
+    /* ─── FEATURES ─── */
+    .features { background: var(--bg); }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem; margin-top: 3rem;
+    }
+    .feat-card {
+      border: 1px solid var(--border);
+      border-radius: var(--r-lg);
+      padding: 2rem;
+      background: var(--surface);
+      position: relative; overflow: hidden;
+      transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s;
+    }
+    .feat-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--green-l), var(--blue-m));
+      transform: scaleX(0); transform-origin: left;
+      transition: transform .35s var(--ease);
+    }
+    .feat-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: transparent; }
+    .feat-card:hover::before { transform: scaleX(1); }
+    .feat-icon { font-size: 2.25rem; margin-bottom: 1rem; }
+    .feat-card h3 { margin-bottom: .5rem; font-size: 1.05rem; }
+    .feat-card p  { font-size: .875rem; line-height: 1.7; }
+
+    /* ─── PROBLEM ─── */
+    .problem { background: linear-gradient(135deg, #0D1117, #0A1929); }
+    .problem h2 { color: #fff; }
+    .problem .section-sub { color: rgba(255,255,255,.5); margin-top: .5rem; margin-bottom: 3rem; }
+
+    .prob-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+    }
+    .prob-item {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r-lg); padding: 1.75rem;
+      transition: background .3s, transform .3s;
+    }
+    .prob-item:hover { background: rgba(255,255,255,.08); transform: translateY(-3px); }
+    .prob-item .ico { font-size: 1.75rem; margin-bottom: 1rem; }
+    .prob-item p { font-size: .875rem; color: rgba(255,255,255,.6); line-height: 1.7; }
+
+    /* ─── SOLUTION ─── */
+    .solution { background: var(--green-pale); }
+    .solution-list {
+      display: grid; gap: 1rem; margin-top: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .sol-item {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: var(--surface); border-radius: var(--r-lg); padding: 1.5rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .sol-num {
+      width: 32px; height: 32px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--green-l), var(--green-d));
+      color: #fff; border-radius: 50%;
+      display: grid; place-items: center;
+      font-family: var(--ff-mono); font-size: .8rem; font-weight: 600;
+    }
+    .sol-item p { font-size: .9rem; color: var(--slate); margin: 0; line-height: 1.6; }
+
+    /* ─── PRICING ─── */
+    .pricing-grid {
+      display: grid; gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      align-items: start; margin-top: 3rem;
+    }
+    .price-card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--r-xl); padding: 2.25rem;
+      position: relative;
+      transition: transform .3s, box-shadow .3s;
+    }
+    .price-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+    .price-card.hot {
+      border-color: var(--green);
+      box-shadow: 0 0 0 1px var(--green), var(--shadow-lg);
+    }
+    .price-chip {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--green-l), var(--green-d));
+      color: #fff; padding: .3rem 1.1rem; border-radius: 100px;
+      font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    }
+    .price-tier { font-family: var(--ff-mono); font-size: .72rem; color: var(--mist); letter-spacing: .1em; text-transform: uppercase; margin-bottom: .5rem; }
+    .price-amount {
+      font-family: var(--ff-display);
+      font-size: 2.6rem; line-height: 1; color: var(--ink);
+      margin-bottom: .25rem;
+    }
+    .price-amount sub { font-family: var(--ff-body); font-size: .9rem; color: var(--mist); vertical-align: middle; }
+    .price-period { font-size: .8rem; color: var(--mist); margin-bottom: 1.75rem; }
+    .price-divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+    .price-feats { list-style: none; margin-bottom: 2rem; }
+    .price-feats li {
+      display: flex; gap: .65rem; align-items: flex-start;
+      padding: .55rem 0; font-size: .875rem; color: var(--slate);
+      border-bottom: 1px solid var(--border);
+    }
+    .price-feats li:last-child { border: none; }
+    .price-feats .chk { color: var(--green); font-size: .85rem; flex-shrink: 0; margin-top: 2px; }
+
+    /* ─── CTA ─── */
+    .cta-band {
+      background: linear-gradient(135deg, var(--green-d) 0%, var(--blue) 100%);
+      padding: 5rem 0; text-align: center; position: relative; overflow: hidden;
+    }
+    .cta-band::before {
+      content: '';
+      position: absolute; top: -60%; left: -10%; right: -10%;
+      height: 200%;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .cta-band h2 { color: #fff; position: relative; z-index: 1; margin-bottom: 1rem; }
+    .cta-band p  { color: rgba(255,255,255,.75); font-size: 1.1rem; margin-bottom: 2.5rem; position: relative; z-index: 1; }
+    .cta-band .hero-actions { justify-content: center; position: relative; z-index: 1; }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: var(--ink); padding: 4rem 0 2rem;
+    }
+    .footer-grid {
+      display: grid; gap: 3rem;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      margin-bottom: 3rem;
+    }
+    @media(max-width:768px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+    .footer-brand { font-size: .875rem; color: rgba(255,255,255,.4); max-width: 260px; line-height: 1.7; }
+    .footer-col h4 {
+      font-family: var(--ff-mono); font-size: .65rem; font-weight: 600;
+      letter-spacing: .12em; text-transform: uppercase;
+      color: rgba(255,255,255,.3); margin-bottom: 1.25rem;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col li { margin-bottom: .6rem; }
+    .footer-col a { font-size: .85rem; color: rgba(255,255,255,.45); }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom {
+      padding-top: 2rem; border-top: 1px solid rgba(255,255,255,.06);
+      display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+      font-size: .78rem; color: rgba(255,255,255,.25);
+    }
+    .social-row { display: flex; gap: .75rem; }
+    .social-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,.07);
+      display: grid; place-items: center; font-size: .85rem;
+      transition: background .2s, transform .2s;
+    }
+    .social-btn:hover { background: var(--green); transform: translateY(-2px); }
+
+    /* Grain overlay */
+    .grain::after {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+      background-size: 180px;
+    }
+    .hero { position: relative; }
+    .hero > * { position: relative; z-index: 1; }
+
+    /* Mobile hamburger */
+    .hamburger { display: flex; flex-direction: column; gap: 4px; padding: .5rem; }
+    .hamburger span { display: block; width: 22px; height: 2.5px; background: var(--ink); border-radius: 2px; transition: all .3s; }
+    @media(min-width:769px) { .hamburger { display: none; } }
+
+    .mobile-nav-menu {
+      display: none; flex-direction: column; gap: .5rem;
+      padding: 1rem 1.5rem;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      position: fixed; top: 68px; inset-inline: 0; z-index: 800;
+    }
+    .mobile-nav-menu.open { display: flex; }
+    .mobile-nav-menu a {
+      padding: .75rem 1rem; font-weight: 600; font-size: .9rem;
+      border-radius: var(--r-sm); color: var(--slate);
+    }
+    .mobile-nav-menu a:hover { background: var(--bg); color: var(--green); }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav class="site-nav" id="nav">
+  <div class="container">
+    <a href="index.html" class="nav-logo"><span class="g">eTIMS</span><span class="b">Concierge</span></a>
+    <ul class="nav-menu hide-mobile">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#problem">Why Now</a></li>
+      <li><a href="login.html">Login</a></li>
+      <li><a href="signup.html" class="btn btn-primary" style="padding:.55rem 1.2rem; font-size:.85rem;">Sign Up Free</a></li>
+    </ul>
+    <button class="hamburger hide-desktop" id="hamburger" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<div class="mobile-nav-menu" id="mobileMenu">
+  <a href="#features" onclick="closeMobile()">Features</a>
+  <a href="#pricing" onclick="closeMobile()">Pricing</a>
+  <a href="#problem" onclick="closeMobile()">Why Now</a>
+  <a href="login.html">Login</a>
+  <a href="signup.html" style="color:var(--green); font-weight:700;">Sign Up Free →</a>
+</div>
+
+<!-- ─── HERO ─── -->
+<section class="hero grain" aria-labelledby="hero-h">
+  <div class="container">
+    <div class="hero-grid">
+      <div class="hero-text" style="animation: fadeUp .8s var(--ease-out) both;">
+        <div class="hero-eyebrow">
+          <span class="live-dot"></span>
+          KRA eTIMS — January 2026 Deadline
+        </div>
+        <h1 id="hero-h">
+          Automate eTIMS<br>
+          Reverse Invoicing<br>
+          <em>in Seconds</em>
+        </h1>
+        <p class="hero-sub">
+          Save 40+ hours monthly. Stay 100% KRA compliant. No manual data entry — just snap, upload, and let our AI do the rest.
+        </p>
+        <div class="hero-actions">
+          <a href="signup.html" class="btn btn-primary btn-lg">Get Started Free</a>
+          <a href="#features" class="btn btn-ghost btn-lg">Watch Demo ▶</a>
+        </div>
+        <div class="hero-trust">
+          <span class="trust-chip"><span class="chk">✓</span> No credit card required</span>
+          <span class="trust-chip"><span class="chk">✓</span> KRA OSCU Integration</span>
+          <span class="trust-chip"><span class="chk">✓</span> 14-day free trial</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" style="animation: fadeUp .8s var(--ease-out) .15s both;">
+        <div class="dash-mock">
+          <div class="mock-topbar">
+            <div class="mock-dots"><span></span><span></span><span></span></div>
+            <div class="mock-title">eTIMSConcierge — Dashboard</div>
+          </div>
+          <div class="mock-stats">
+            <div class="mock-stat"><div class="n">342</div><div class="l">Receipts</div></div>
+            <div class="mock-stat"><div class="n">KES 2.1M</div><div class="l">Processed</div></div>
+            <div class="mock-stat"><div class="n">99.9%</div><div class="l">Accuracy</div></div>
+            <div class="mock-stat"><div class="n">38h</div><div class="l">Saved</div></div>
+          </div>
+          <div class="mock-row">
+            <span class="sup">Nairobi Hardware Ltd</span>
+            <span class="amt">KES 18,500</span>
+            <span class="tag tag-done">Done</span>
+          </div>
+          <div class="mock-row">
+            <span class="sup">Equity Supplies</span>
+            <span class="amt">KES 4,250</span>
+            <span class="tag tag-pend">Pending</span>
+          </div>
+          <div class="mock-row">
+            <span class="sup">Westlands Traders</span>
+            <span class="amt">KES 31,000</span>
+            <span class="tag tag-done">Done</span>
+          </div>
+          <div class="mock-upload">
+            <div class="ico">📸</div>
+            <p>Drop receipt to upload or click to browse</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STATS BAR ─── -->
+<div class="stats-bar">
+  <div class="container">
+    <div class="stats-inner">
+      <div class="stat-item reveal">
+        <div class="stat-n">99.9%</div>
+        <div class="stat-l">OCR Accuracy Rate</div>
+      </div>
+      <div class="stat-item reveal d1">
+        <div class="stat-n">40+</div>
+        <div class="stat-l">Hours Saved Monthly</div>
+      </div>
+      <div class="stat-item reveal d2">
+        <div class="stat-n">100%</div>
+        <div class="stat-l">KRA Compliant</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FEATURES ─── -->
+<section id="features" class="section features">
+  <div class="container">
+    <div class="reveal" style="max-width:600px;">
+      <div style="font-family:var(--ff-mono);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem;">How It Works</div>
+      <h2>eTIMS Concierge in<br><em style="font-style:italic;color:var(--green);">four simple steps</em></h2>
+      <p style="margin-top:.75rem;">Purpose-built for Kenyan businesses buying from non-eTIMS registered suppliers.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">📸</div>
+        <h3>Upload Receipts</h3>
+        <p>Snap photos of receipts from non-eTIMS suppliers using your phone or upload from your computer. Supports JPG, PNG, PDF.</p>
+      </div>
+      <div class="feat-card reveal d1">
+        <div class="feat-icon">🤖</div>
+        <h3>AI Extracts Data</h3>
+        <p>Our OCR technology automatically reads supplier name, date, amount, and line items with 99.9% accuracy. No typing required.</p>
+      </div>
+      <div class="feat-card reveal d2">
+        <div class="feat-icon">📊</div>
+        <h3>Organized Dashboard</h3>
+        <p>View all receipts in one place. Search, filter by date or status, and instantly find any transaction in seconds.</p>
+      </div>
+      <div class="feat-card reveal d3">
+        <div class="feat-icon">📋</div>
+        <h3>eTIMS-Ready Export</h3>
+        <p>Download formatted CSV data ready for KRA eTIMS entry. Full direct API automation coming Q2 2026 — subscribers get first access.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PROBLEM ─── -->
+<section id="problem" class="section problem">
+  <div class="container">
+    <div class="reveal" style="max-width:600px;">
+      <div style="font-family:var(--ff-mono);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#69F0AE;margin-bottom:.75rem;">The Compliance Crisis</div>
+      <h2>The Problem<br>We Solve</h2>
+      <p class="section-sub">Every Kenyan business faces these risks right now. The deadline is January 2026.</p>
+    </div>
+    <div class="prob-grid">
+      <div class="prob-item reveal">
+        <div class="ico">🚫</div>
+        <p>KRA's new AI system (Jan 2026) will <strong style="color:#fff;">automatically reject</strong> expenses without valid eTIMS invoices — costing you tax deductions.</p>
+      </div>
+      <div class="prob-item reveal d1">
+        <div class="ico">⏱️</div>
+        <p>Manual reverse invoicing takes <strong style="color:#fff;">40+ hours monthly</strong> for businesses with 500+ receipts. That's an entire week of finance staff time.</p>
+      </div>
+      <div class="prob-item reveal d2">
+        <div class="ico">❌</div>
+        <p>High risk of <strong style="color:#fff;">human errors</strong> in manual data entry leads to mismatches, rejected invoices, and costly tax audits.</p>
+      </div>
+      <div class="prob-item reveal d3">
+        <div class="ico">⚖️</div>
+        <p><strong style="color:#fff;">Criminal prosecution</strong> is possible for VAT non-compliance under the Tax Procedures Act. Don't let your business be at risk.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── SOLUTION ─── -->
+<section class="section solution">
+  <div class="container">
+    <div class="reveal" style="max-width:600px;">
+      <div style="font-family:var(--ff-mono);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem;">Our Solution</div>
+      <h2>Everything handled.<br><em style="font-style:italic;color:var(--green);">Automatically.</em></h2>
+    </div>
+    <div class="solution-list">
+      <div class="sol-item reveal"><div class="sol-num">1</div><p>Upload receipts in bulk via mobile app or web browser — anywhere, any time</p></div>
+      <div class="sol-item reveal d1"><div class="sol-num">2</div><p>AI reads and extracts all supplier data, amounts, and line items automatically</p></div>
+      <div class="sol-item reveal d2"><div class="sol-num">3</div><p>Organized compliance dashboard with powerful search, filters, and status tracking</p></div>
+      <div class="sol-item reveal d3"><div class="sol-num">4</div><p>Export eTIMS-ready CSV files formatted exactly to KRA specifications</p></div>
+      <div class="sol-item reveal"><div class="sol-num">5</div><p>Full direct KRA OSCU API automation launching Q2 2026 — subscribers get priority</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── PRICING ─── -->
+<section id="pricing" class="section" style="background:var(--bg);">
+  <div class="container">
+    <div class="reveal" style="max-width:600px; margin: 0 auto 3rem; text-align:center;">
+      <div style="font-family:var(--ff-mono);font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:.75rem;">Pricing</div>
+      <h2>Simple, transparent<br><em style="font-style:italic;color:var(--green);">pricing</em></h2>
+      <p style="margin-top:.75rem;">All plans include OCR extraction, compliance dashboard, and CSV export. No hidden fees.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="price-card reveal">
+        <div class="price-tier">Starter</div>
+        <div class="price-amount">KES 4,999<sub>/mo</sub></div>
+        <div class="price-period">Perfect for small businesses</div>
+        <hr class="price-divider" />
+        <ul class="price-feats">
+          <li><span class="chk">✓</span> 200 receipts / month</li>
+          <li><span class="chk">✓</span> Mobile upload app</li>
+          <li><span class="chk">✓</span> OCR data extraction</li>
+          <li><span class="chk">✓</span> Basic dashboard</li>
+          <li><span class="chk">✓</span> CSV export</li>
+          <li><span class="chk">✓</span> Email support</li>
+        </ul>
+        <a href="signup.html" class="btn btn-secondary btn-full">Get Started</a>
+      </div>
+      <div class="price-card hot reveal d1">
+        <div class="price-chip">Most Popular</div>
+        <div class="price-tier">Professional</div>
+        <div class="price-amount">KES 9,999<sub>/mo</sub></div>
+        <div class="price-period">For growing companies</div>
+        <hr class="price-divider" />
+        <ul class="price-feats">
+          <li><span class="chk">✓</span> 1,000 receipts / month</li>
+          <li><span class="chk">✓</span> Everything in Starter</li>
+          <li><span class="chk">✓</span> Advanced analytics</li>
+          <li><span class="chk">✓</span> Bulk upload</li>
+          <li><span class="chk">✓</span> Priority support</li>
+          <li><span class="chk">✓</span> Custom integrations</li>
+        </ul>
+        <a href="signup.html" class="btn btn-primary btn-full">Get Started</a>
+      </div>
+      <div class="price-card reveal d2">
+        <div class="price-tier">Enterprise</div>
+        <div class="price-amount" style="font-size:2rem;">Custom</div>
+        <div class="price-period">Large organizations</div>
+        <hr class="price-divider" />
+        <ul class="price-feats">
+          <li><span class="chk">✓</span> Unlimited receipts</li>
+          <li><span class="chk">✓</span> Dedicated account manager</li>
+          <li><span class="chk">✓</span> API access</li>
+          <li><span class="chk">✓</span> Custom workflows</li>
+          <li><span class="chk">✓</span> SLA guarantee</li>
+          <li><span class="chk">✓</span> On-premise option</li>
+        </ul>
+        <a href="signup.html" class="btn btn-secondary btn-full">Contact Sales</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA BAND ─── -->
+<div class="cta-band">
+  <div class="container">
+    <h2>Ready to save 40+ hours per month?</h2>
+    <p>Join businesses already compliant for January 2026. Free for 14 days.</p>
+    <div class="hero-actions">
+      <a href="signup.html" class="btn btn-white btn-lg" style="background:#fff;color:var(--green);font-weight:700;">Create Free Account →</a>
+      <a href="login.html" class="btn btn-ghost btn-lg">Already have an account</a>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="nav-logo" style="margin-bottom:.75rem;"><span class="g">eTIMS</span><span class="b">Concierge</span></div>
+        <p class="footer-brand">Automated reverse invoicing for Kenyan businesses. KRA compliant. Built in Nairobi.</p>
+        <div class="social-row" style="margin-top:1.25rem;">
+          <a href="#" class="social-btn" aria-label="Twitter">𝕏</a>
+          <a href="#" class="social-btn" aria-label="LinkedIn">in</a>
+          <a href="#" class="social-btn" aria-label="Facebook">f</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+          <li><a href="#">API Docs</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About Us</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">KRA Compliance</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 eTIMS Concierge. All rights reserved. Built for Kenyan businesses.</span>
+      <span>Powered by Supabase</span>
+    </div>
+  </div>
+</footer>
+
+<div id="toast"><span class="toast-icon">✓</span><span id="toast-msg"></span></div>
+
+<script>
+  /* Nav scroll */
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => nav.classList.toggle('scrolled', window.scrollY > 40));
+
+  /* Mobile menu */
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  function closeMobile() { mobileMenu.classList.remove('open'); }
+  document.addEventListener('click', e => {
+    if (!hamburger.contains(e.target) && !mobileMenu.contains(e.target)) closeMobile();
+  });
+
+  /* Scroll reveal */
+  const ro = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); ro.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+  /* Smooth anchor scroll */
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      const target = document.querySelector(a.getAttribute('href'));
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+
+  /* Fade-up keyframe */
+  const style = document.createElement('style');
+  style.textContent = `@keyframes fadeUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }`;
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
