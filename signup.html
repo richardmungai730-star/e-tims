@@ -981,11 +981,10 @@ tbody tr              { cursor: pointer; }
   }
 
   function showSuccessConfirm() {
-    const alert = document.getElementById('successAlert');
-    alert.innerHTML = '📧 <strong>Check your email!</strong> We sent a confirmation link to your inbox. Click it to activate your account and access the dashboard.';
-    alert.classList.add('show');
+    const alertEl = document.getElementById('alertSuccess');
+    alertEl.innerHTML = '📧 <strong>Check your email!</strong> We sent a confirmation link to your inbox. Click it to activate your account and access the dashboard.';
+    alertEl.classList.add('show');
     document.getElementById('signupForm').style.display = 'none';
-    document.getElementById('submitBtn') && (document.getElementById('submitBtn').style.display = 'none');
   }
 
   /* Handle returning from email confirmation */
@@ -1001,9 +1000,6 @@ tbody tr              { cursor: pointer; }
       }
       window.location.href = 'dashboard.html';
     }
-  });
-
-
   });
 
   /* ── Pre-fill email from URL param ── */
