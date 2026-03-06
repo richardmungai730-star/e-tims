@@ -905,44 +905,34 @@ tbody tr              { cursor: pointer; }
 
     try {
       /* 1. Create Supabase auth user */
-      const { data: authData, error: authError } = await supabase.auth.signUp({ email, password });
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { full_name: fullName, tin: tin, org_name: orgName }
+        }
+      });
       if (authError) throw authError;
 
       const userId = authData.user?.id;
       if (!userId) throw new Error('User creation failed. Please try again.');
 
-      /* 2. Check if organization with that TIN already exists */
-      let org = null;
-      const { data: existingOrg } = await supabase
-        .from('organizations')
-        .select('*')
-        .eq('tin', tin)
-        .maybeSingle();
+      /* Check if email confirmation is required */
+      const needsConfirmation = !authData.session;
 
-      if (existingOrg) {
-        org = existingOrg;
-      } else {
-        /* 3. Create new organization */
-        const { data: newOrg, error: orgError } = await supabase
-          .from('organizations')
-          .insert([{ name: orgName, tin: tin, email: email }])
-          .select()
-          .single();
-        if (orgError) throw orgError;
-        org = newOrg;
+      if (needsConfirmation) {
+        /* Email confirmation is ON — store signup data in localStorage
+           and redirect to a waiting page, OR just tell user to confirm */
+        localStorage.setItem('pendingSignup', JSON.stringify({
+          userId, fullName, orgName, tin, email
+        }));
+        showSuccessConfirm();
+        return;
       }
 
-      /* 4. Create user profile */
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: userId,
-          organization_id: org.id,
-          full_name: fullName
-        }]);
-      if (profileError) throw profileError;
+      /* Email confirmation is OFF — proceed immediately */
+      await createOrgAndProfile(userId, fullName, orgName, tin, email);
 
-      /* 5. Success */
       showSuccess();
       setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
 
@@ -950,12 +940,70 @@ tbody tr              { cursor: pointer; }
       console.error('Signup error:', err);
       let msg = err.message || 'An unexpected error occurred.';
       if (msg.includes('already registered') || msg.includes('already been registered')) {
-        msg = 'This email is already registered. Please log in instead.';
+        msg = 'This email is already registered. <a href="login.html" style="color:var(--green);font-weight:700;">Log in instead →</a>';
       }
       showError(msg);
     } finally {
       setLoading(false);
     }
+  });
+
+  async function createOrgAndProfile(userId, fullName, orgName, tin, email) {
+    /* Check if organization with that TIN already exists */
+    let org = null;
+    const { data: existingOrg } = await supabase
+      .from('organizations')
+      .select('*')
+      .eq('tin', tin)
+      .maybeSingle();
+
+    if (existingOrg) {
+      org = existingOrg;
+    } else {
+      const { data: newOrg, error: orgError } = await supabase
+        .from('organizations')
+        .insert([{ name: orgName, tin: tin, email: email }])
+        .select()
+        .single();
+      if (orgError) throw orgError;
+      org = newOrg;
+    }
+
+    /* Create user profile */
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .upsert([{
+        id: userId,
+        organization_id: org.id,
+        full_name: fullName
+      }]);
+    if (profileError) console.warn('Profile error (non-fatal):', profileError);
+  }
+
+  function showSuccessConfirm() {
+    const alert = document.getElementById('successAlert');
+    alert.innerHTML = '📧 <strong>Check your email!</strong> We sent a confirmation link to your inbox. Click it to activate your account and access the dashboard.';
+    alert.classList.add('show');
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('submitBtn') && (document.getElementById('submitBtn').style.display = 'none');
+  }
+
+  /* Handle returning from email confirmation */
+  supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session) {
+      const pending = localStorage.getItem('pendingSignup');
+      if (pending) {
+        try {
+          const { userId, fullName, orgName, tin, email } = JSON.parse(pending);
+          await createOrgAndProfile(session.user.id, fullName, orgName, tin, email);
+          localStorage.removeItem('pendingSignup');
+        } catch(e) { console.warn('Pending signup error:', e); }
+      }
+      window.location.href = 'dashboard.html';
+    }
+  });
+
+
   });
 
   /* ── Pre-fill email from URL param ── */
