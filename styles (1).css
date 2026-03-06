@@ -88,6 +88,12 @@
   --bg:           var(--paper);
   --success:      var(--forest-l);
   --success-pale: var(--mint);
+
+  /* ── Font alias: old HTML used --ff-body, new system uses --ff-ui ── */
+  --ff-body:      'Syne', sans-serif;
+
+  /* ── ink-2 explicit token ── */
+  --ink-2:        #253020;
 }
 
 /* ══════════════════════════════════
