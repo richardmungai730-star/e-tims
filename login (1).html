@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Login — eTIMS Concierge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --green:   #235C3F;
+  --green-l: #34A870;
+  --green-d: #0F2218;
+  --mint:    #E6F5EE;
+  --amber:   #D4891A;
+  --ink:     #0E1610;
+  --slate:   #445542;
+  --mist:    #7A9178;
+  --border:  #E8ECE4;
+  --bg:      #F8FAF7;
+  --white:   #FFFFFF;
+  --danger:  #C0392B;
+  --danger-bg: #FDECEA;
+  --blue:    #1976D2;
+  --blue-bg: #E3F2FD;
+  --ff-head: 'Fraunces', Georgia, serif;
+  --ff-body: 'Syne', sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
+  --sh-sm: 0 2px 8px rgba(14,22,16,.07);
+  --sh-md: 0 6px 24px rgba(14,22,16,.10);
+  --sh-lg: 0 16px 56px rgba(14,22,16,.14);
+  --sh-xl: 0 32px 80px rgba(14,22,16,.20);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--ff-body); background: var(--bg); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { text-decoration: none; color: inherit; }
+img { display: block; max-width: 100%; }
+button { font-family: var(--ff-body); cursor: pointer; border: none; background: none; }
+input, select, textarea { font-family: var(--ff-body); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  padding: .75rem 1.75rem; font-size: .9rem; font-weight: 700;
+  border-radius: var(--r-md); border: none; cursor: pointer;
+  transition: all .25s; white-space: nowrap;
+}
+.btn-primary { background: linear-gradient(135deg,#52C48A,#235C3F); color:#fff; box-shadow: 0 4px 16px rgba(35,92,63,.3); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow: 0 8px 28px rgba(35,92,63,.4); }
+.btn-secondary { background: transparent; color: var(--green); border: 2px solid var(--green); }
+.btn-secondary:hover { background: var(--mint); transform:translateY(-2px); }
+.btn-ghost { background: rgba(255,255,255,.1); color:#fff; border:1.5px solid rgba(255,255,255,.25); backdrop-filter:blur(8px); }
+.btn-ghost:hover { background: rgba(255,255,255,.18); transform:translateY(-2px); }
+.btn-danger { background: var(--danger); color:#fff; }
+.btn-danger:hover { background:#a93226; transform:translateY(-2px); }
+.btn-lg { padding: 1rem 2.25rem; font-size: 1rem; border-radius: var(--r-lg); }
+.btn-full { width: 100%; }
+.btn:disabled { opacity:.5; pointer-events:none; }
+
+/* FORMS */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--slate); margin-bottom:.35rem; }
+.form-input { width:100%; padding:.75rem 1rem; border:1.5px solid var(--border); border-radius:var(--r-md); font-family:var(--ff-body); font-size:.9rem; color:var(--ink); background:#fff; outline:none; transition: border-color .2s, box-shadow .2s; }
+.form-input:focus { border-color:var(--green-l); box-shadow: 0 0 0 4px rgba(52,168,112,.12); }
+.form-input::placeholder { color:var(--mist); }
+
+/* ALERTS */
+.alert { padding:.85rem 1rem; border-radius:var(--r-md); font-size:.875rem; border-left:3px solid; display:none; margin-bottom:1rem; }
+.alert.show { display:block; }
+.alert-success { background:var(--mint); color:var(--green-d); border-color:var(--green-l); }
+.alert-error   { background:var(--danger-bg); color:#922B21; border-color:var(--danger); }
+.alert-info    { background:var(--blue-bg); color:#0D47A1; border-color:var(--blue); }
+
+/* BADGES */
+.badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .65rem; border-radius:100px; font-size:.65rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.badge-green  { background:var(--mint); color:var(--green-d); }
+.badge-blue   { background:var(--blue-bg); color:var(--blue); }
+.badge-orange { background:#FEF6E4; color:#7D4E00; }
+.badge-red    { background:var(--danger-bg); color:var(--danger); }
+.badge-gray   { background:#F0F2F4; color:var(--slate); }
+
+/* CARD */
+.card { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); padding:2rem; box-shadow:var(--sh-sm); }
+
+/* TOAST */
+#toast { position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999; min-width:280px; max-width:380px; background:#141A12; color:rgba(255,255,255,.92); padding:.9rem 1.25rem; border-radius:var(--r-lg); font-size:.85rem; font-weight:500; box-shadow:var(--sh-xl); display:flex; align-items:center; gap:.65rem; transform:translateY(120%); opacity:0; transition:all .4s cubic-bezier(.34,1.56,.64,1); pointer-events:none; border-left:3px solid var(--green-l); }
+#toast.show { transform:translateY(0); opacity:1; }
+
+/* SPINNER */
+.spinner { width:32px; height:32px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--green-l); animation:spin .8s linear infinite; margin:0 auto; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* SIDEBAR NAV */
+.nav-item { display:flex; align-items:center; gap:.75rem; padding:.65rem 1.1rem; margin:.1rem .6rem; border-radius:var(--r-md); font-size:.85rem; font-weight:600; color:rgba(255,255,255,.45); cursor:pointer; transition:all .2s; border:none; background:none; width:calc(100% - 1.2rem); text-align:left; text-decoration:none; }
+.nav-item:hover { background:rgba(255,255,255,.08); color:rgba(255,255,255,.88); }
+.nav-item.active { background:rgba(82,196,138,.12); color:#5EE89A; border:1px solid rgba(82,196,138,.15); }
+.nav-item .ico { width:20px; text-align:center; flex-shrink:0; }
+
+/* RESPONSIVE */
+@media(max-width:768px){ .hide-mobile{display:none!important;} }
+@media(min-width:769px){ .hide-desktop{display:none!important;} }
+
+/* REVEAL */
+.reveal { opacity:0; transform:translateY(24px); transition:opacity .6s, transform .6s; }
+.reveal.in { opacity:1; transform:none; }
+.d1{transition-delay:.1s} .d2{transition-delay:.2s} .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+body { background:linear-gradient(135deg,#0a1a0f,#0f2218,#0a1929); display:flex; align-items:center; justify-content:center; min-height:100svh; padding:2rem 1rem; }
+.wrap { width:100%; max-width:440px; }
+.back-link { display:block; color:rgba(255,255,255,.4); font-size:.825rem; margin-bottom:1.25rem; transition:color .2s; }
+.back-link:hover { color:rgba(255,255,255,.75); }
+.card { background:#fff; border-radius:22px; padding:2.5rem; box-shadow:var(--sh-xl); }
+.logo { text-align:center; font-family:var(--ff-head); font-size:1.5rem; font-weight:900; margin-bottom:1.5rem; }
+.logo .g{color:var(--green);} .logo .b{color:var(--blue);}
+h1 { font-size:1.5rem; text-align:center; margin-bottom:.3rem; }
+.sub { text-align:center; color:var(--mist); font-size:.875rem; margin-bottom:1.75rem; }
+.pass-wrap { position:relative; }
+.pass-wrap input { padding-right:3rem; }
+.pass-toggle { position:absolute; right:.85rem; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:.9rem; color:var(--mist); }
+.forgot-link { font-size:.78rem; color:var(--green); font-weight:600; cursor:pointer; }
+.forgot-link:hover { text-decoration:underline; }
+.footer-link { text-align:center; margin-top:1.25rem; font-size:.875rem; color:var(--mist); }
+.footer-link a { color:var(--green); font-weight:700; }
+.reset-section { display:none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="back-link">← Back to Home</a>
+  <div class="card">
+    <div class="logo"><span class="g">eTIMS</span><span class="b">Concierge</span></div>
+
+    <!-- LOGIN -->
+    <div id="loginSection">
+      <h1>Welcome Back</h1>
+      <p class="sub">Sign in to your dashboard</p>
+      <div class="alert alert-success" id="loginOk">✅ Logged in! Redirecting...</div>
+      <div class="alert alert-error"   id="loginErr"><span id="loginErrTxt">Invalid credentials.</span></div>
+      <div class="form-group">
+        <label class="form-label" for="loginEmail">Email</label>
+        <input class="form-input" type="email" id="loginEmail" placeholder="jane@company.co.ke"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="loginPass" style="display:flex;justify-content:space-between;">
+          Password
+          <span class="forgot-link" onclick="showReset()">Forgot password?</span>
+        </label>
+        <div class="pass-wrap">
+          <input class="form-input" type="password" id="loginPass" placeholder="Your password"/>
+          <button class="pass-toggle" id="passToggle" type="button">👁</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" id="loginBtn" onclick="doLogin()">Sign In →</button>
+      <div class="footer-link">Don't have an account? <a href="signup.html">Sign up free →</a></div>
+    </div>
+
+    <!-- RESET PASSWORD -->
+    <div id="resetSection" class="reset-section">
+      <h1>Reset Password</h1>
+      <p class="sub">Enter your email and we'll send a reset link</p>
+      <div class="alert alert-success" id="resetOk">✅ Check your email for the reset link!</div>
+      <div class="alert alert-error"   id="resetErr"><span id="resetErrTxt">Something went wrong.</span></div>
+      <div class="form-group">
+        <label class="form-label" for="resetEmail">Email</label>
+        <input class="form-input" type="email" id="resetEmail" placeholder="jane@company.co.ke"/>
+      </div>
+      <button class="btn btn-primary btn-full btn-lg" id="resetBtn" onclick="doReset()">Send Reset Link</button>
+      <div class="footer-link"><a href="#" onclick="showLogin()">← Back to login</a></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _db=window.supabase.createClient(
+  'https://lreoqxryryoaxpirefwn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZW9xeHJ5cnlvYXhwaXJlZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzc5MTQsImV4cCI6MjA4ODI1MzkxNH0.OwfIjz4bI02noE6gpleBPKz_V6dmZvaoCrJIzLBNaQk'
+);
+
+_db.auth.getSession().then(({data})=>{ if(data.session) location.href='dashboard.html'; });
+
+document.getElementById('passToggle').addEventListener('click',function(){
+  const inp=document.getElementById('loginPass');
+  inp.type=inp.type==='password'?'text':'password';
+  this.textContent=inp.type==='password'?'👁':'🙈';
+});
+
+document.getElementById('loginPass').addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginEmail').addEventListener('keydown',function(e){ if(e.key==='Enter') doLogin(); });
+
+async function doLogin(){
+  const email=document.getElementById('loginEmail').value.trim().toLowerCase();
+  const password=document.getElementById('loginPass').value;
+  const btn=document.getElementById('loginBtn');
+  document.getElementById('loginOk').classList.remove('show');
+  document.getElementById('loginErr').classList.remove('show');
+  if(!email||!password){ return showLoginErr('Please enter your email and password.'); }
+  btn.disabled=true; btn.textContent='Signing in...';
+  try {
+    const {data,error}=await _db.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    document.getElementById('loginOk').classList.add('show');
+    setTimeout(()=>{ location.href='dashboard.html'; },1000);
+  } catch(err){
+    let msg=err.message||'Login failed.';
+    if(msg.includes('Invalid login')) msg='Incorrect email or password. Please try again.';
+    showLoginErr(msg);
+    btn.disabled=false; btn.textContent='Sign In →';
+  }
+}
+
+async function doReset(){
+  const email=document.getElementById('resetEmail').value.trim().toLowerCase();
+  const btn=document.getElementById('resetBtn');
+  document.getElementById('resetOk').classList.remove('show');
+  document.getElementById('resetErr').classList.remove('show');
+  if(!email) return;
+  btn.disabled=true; btn.textContent='Sending...';
+  const {error}=await _db.auth.resetPasswordForEmail(email,{redirectTo:'https://richardmungai730-star.github.io/e-tims/login.html'});
+  if(error){ document.getElementById('resetErrTxt').textContent=error.message; document.getElementById('resetErr').classList.add('show'); }
+  else { document.getElementById('resetOk').classList.add('show'); }
+  btn.disabled=false; btn.textContent='Send Reset Link';
+}
+
+function showReset(){ document.getElementById('loginSection').style.display='none'; document.getElementById('resetSection').style.display='block'; }
+function showLogin(){ document.getElementById('resetSection').style.display='none'; document.getElementById('loginSection').style.display='block'; }
+function showLoginErr(msg){ document.getElementById('loginErrTxt').innerHTML=msg; document.getElementById('loginErr').classList.add('show'); }
+</script>
+</body>
+</html>

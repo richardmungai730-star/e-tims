@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Upload Receipts — eTIMS Concierge</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,900&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root {
+  --green:   #235C3F;
+  --green-l: #34A870;
+  --green-d: #0F2218;
+  --mint:    #E6F5EE;
+  --amber:   #D4891A;
+  --ink:     #0E1610;
+  --slate:   #445542;
+  --mist:    #7A9178;
+  --border:  #E8ECE4;
+  --bg:      #F8FAF7;
+  --white:   #FFFFFF;
+  --danger:  #C0392B;
+  --danger-bg: #FDECEA;
+  --blue:    #1976D2;
+  --blue-bg: #E3F2FD;
+  --ff-head: 'Fraunces', Georgia, serif;
+  --ff-body: 'Syne', sans-serif;
+  --ff-mono: 'JetBrains Mono', monospace;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
+  --sh-sm: 0 2px 8px rgba(14,22,16,.07);
+  --sh-md: 0 6px 24px rgba(14,22,16,.10);
+  --sh-lg: 0 16px 56px rgba(14,22,16,.14);
+  --sh-xl: 0 32px 80px rgba(14,22,16,.20);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: var(--ff-body); background: var(--bg); color: var(--ink); line-height: 1.6; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { text-decoration: none; color: inherit; }
+img { display: block; max-width: 100%; }
+button { font-family: var(--ff-body); cursor: pointer; border: none; background: none; }
+input, select, textarea { font-family: var(--ff-body); }
+
+/* BUTTONS */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem;
+  padding: .75rem 1.75rem; font-size: .9rem; font-weight: 700;
+  border-radius: var(--r-md); border: none; cursor: pointer;
+  transition: all .25s; white-space: nowrap;
+}
+.btn-primary { background: linear-gradient(135deg,#52C48A,#235C3F); color:#fff; box-shadow: 0 4px 16px rgba(35,92,63,.3); }
+.btn-primary:hover { transform:translateY(-2px); box-shadow: 0 8px 28px rgba(35,92,63,.4); }
+.btn-secondary { background: transparent; color: var(--green); border: 2px solid var(--green); }
+.btn-secondary:hover { background: var(--mint); transform:translateY(-2px); }
+.btn-ghost { background: rgba(255,255,255,.1); color:#fff; border:1.5px solid rgba(255,255,255,.25); backdrop-filter:blur(8px); }
+.btn-ghost:hover { background: rgba(255,255,255,.18); transform:translateY(-2px); }
+.btn-danger { background: var(--danger); color:#fff; }
+.btn-danger:hover { background:#a93226; transform:translateY(-2px); }
+.btn-lg { padding: 1rem 2.25rem; font-size: 1rem; border-radius: var(--r-lg); }
+.btn-full { width: 100%; }
+.btn:disabled { opacity:.5; pointer-events:none; }
+
+/* FORMS */
+.form-group { margin-bottom: 1rem; }
+.form-label { display:block; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--slate); margin-bottom:.35rem; }
+.form-input { width:100%; padding:.75rem 1rem; border:1.5px solid var(--border); border-radius:var(--r-md); font-family:var(--ff-body); font-size:.9rem; color:var(--ink); background:#fff; outline:none; transition: border-color .2s, box-shadow .2s; }
+.form-input:focus { border-color:var(--green-l); box-shadow: 0 0 0 4px rgba(52,168,112,.12); }
+.form-input::placeholder { color:var(--mist); }
+
+/* ALERTS */
+.alert { padding:.85rem 1rem; border-radius:var(--r-md); font-size:.875rem; border-left:3px solid; display:none; margin-bottom:1rem; }
+.alert.show { display:block; }
+.alert-success { background:var(--mint); color:var(--green-d); border-color:var(--green-l); }
+.alert-error   { background:var(--danger-bg); color:#922B21; border-color:var(--danger); }
+.alert-info    { background:var(--blue-bg); color:#0D47A1; border-color:var(--blue); }
+
+/* BADGES */
+.badge { display:inline-flex; align-items:center; gap:.3rem; padding:.2rem .65rem; border-radius:100px; font-size:.65rem; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.badge::before { content:''; width:5px; height:5px; border-radius:50%; background:currentColor; flex-shrink:0; }
+.badge-green  { background:var(--mint); color:var(--green-d); }
+.badge-blue   { background:var(--blue-bg); color:var(--blue); }
+.badge-orange { background:#FEF6E4; color:#7D4E00; }
+.badge-red    { background:var(--danger-bg); color:var(--danger); }
+.badge-gray   { background:#F0F2F4; color:var(--slate); }
+
+/* CARD */
+.card { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); padding:2rem; box-shadow:var(--sh-sm); }
+
+/* TOAST */
+#toast { position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999; min-width:280px; max-width:380px; background:#141A12; color:rgba(255,255,255,.92); padding:.9rem 1.25rem; border-radius:var(--r-lg); font-size:.85rem; font-weight:500; box-shadow:var(--sh-xl); display:flex; align-items:center; gap:.65rem; transform:translateY(120%); opacity:0; transition:all .4s cubic-bezier(.34,1.56,.64,1); pointer-events:none; border-left:3px solid var(--green-l); }
+#toast.show { transform:translateY(0); opacity:1; }
+
+/* SPINNER */
+.spinner { width:32px; height:32px; border-radius:50%; border:3px solid var(--border); border-top-color:var(--green-l); animation:spin .8s linear infinite; margin:0 auto; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width:5px; } ::-webkit-scrollbar-track { background:var(--bg); } ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* SIDEBAR NAV */
+.nav-item { display:flex; align-items:center; gap:.75rem; padding:.65rem 1.1rem; margin:.1rem .6rem; border-radius:var(--r-md); font-size:.85rem; font-weight:600; color:rgba(255,255,255,.45); cursor:pointer; transition:all .2s; border:none; background:none; width:calc(100% - 1.2rem); text-align:left; text-decoration:none; }
+.nav-item:hover { background:rgba(255,255,255,.08); color:rgba(255,255,255,.88); }
+.nav-item.active { background:rgba(82,196,138,.12); color:#5EE89A; border:1px solid rgba(82,196,138,.15); }
+.nav-item .ico { width:20px; text-align:center; flex-shrink:0; }
+
+/* RESPONSIVE */
+@media(max-width:768px){ .hide-mobile{display:none!important;} }
+@media(min-width:769px){ .hide-desktop{display:none!important;} }
+
+/* REVEAL */
+.reveal { opacity:0; transform:translateY(24px); transition:opacity .6s, transform .6s; }
+.reveal.in { opacity:1; transform:none; }
+.d1{transition-delay:.1s} .d2{transition-delay:.2s} .d3{transition-delay:.3s} .d4{transition-delay:.4s}
+
+body { background:var(--bg); }
+.layout { display:flex; min-height:100svh; }
+.sidebar { width:240px; flex-shrink:0; background:#141A12; position:fixed; top:0; left:0; bottom:0; display:flex; flex-direction:column; z-index:800; transition:transform .3s; }
+.sidebar-logo { padding:1.4rem 1.25rem; font-family:var(--ff-head); font-size:1.2rem; font-weight:900; border-bottom:1px solid rgba(255,255,255,.06); }
+.sidebar-logo .g{color:#5EE89A;} .sidebar-logo .b{color:#64B5F6;}
+.sidebar-nav { flex:1; padding:1rem 0; }
+.nav-section { font-family:var(--ff-mono); font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:rgba(255,255,255,.2); padding:.85rem 1.1rem .4rem; }
+.sidebar-footer { padding:1.1rem; border-top:1px solid rgba(255,255,255,.06); }
+.user-chip { display:flex; align-items:center; gap:.65rem; padding:.65rem; border-radius:var(--r-md); background:rgba(255,255,255,.05); }
+.avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#52C48A,#235C3F); display:grid; place-items:center; font-weight:800; font-size:.85rem; color:#fff; flex-shrink:0; }
+.user-info { flex:1; min-width:0; }
+.user-name { font-size:.78rem; font-weight:700; color:rgba(255,255,255,.85); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.user-org  { font-size:.63rem; color:rgba(255,255,255,.3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-family:var(--ff-mono); }
+@media(max-width:768px){ .sidebar{transform:translateX(-100%);} .sidebar.open{transform:none;} }
+.main { flex:1; margin-left:240px; }
+@media(max-width:768px){ .main{margin-left:0;} }
+.topbar { height:62px; background:#fff; border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 1.5rem; gap:1rem; position:sticky; top:0; z-index:500; }
+.topbar-title { font-family:var(--ff-head); font-size:1.1rem; font-weight:700; flex:1; }
+.menu-toggle { display:none; flex-direction:column; gap:4px; padding:.5rem; cursor:pointer; background:none; border:none; }
+.menu-toggle span { display:block; width:20px; height:2px; background:var(--slate); border-radius:2px; }
+@media(max-width:768px){ .menu-toggle{display:flex;} }
+.page { padding:1.5rem; max-width:1000px; }
+
+/* DROP ZONE */
+.drop-zone { background:#fff; border:2px dashed var(--border); border-radius:var(--r-xl); padding:3rem 2rem; text-align:center; cursor:pointer; transition:all .25s; position:relative; margin-bottom:1.5rem; }
+.drop-zone:hover,.drop-zone.drag { border-color:var(--green-l); background:var(--mint); }
+.drop-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.drop-zone .big-ico { font-size:3.5rem; margin-bottom:.75rem; display:block; }
+.drop-zone h2 { font-size:1.15rem; margin-bottom:.4rem; }
+.drop-zone p { color:var(--mist); font-size:.875rem; }
+.drop-zone .limits { font-size:.72rem; color:var(--mist); margin-top:.5rem; }
+
+/* QUEUE */
+.queue-section { background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; margin-bottom:1.5rem; display:none; }
+.queue-header { padding:1rem 1.4rem; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+.queue-header h3 { font-size:.95rem; }
+.queue-actions { display:flex; gap:.6rem; }
+.queue-list { max-height:400px; overflow-y:auto; }
+.queue-item { display:flex; align-items:center; gap:1rem; padding:.85rem 1.4rem; border-bottom:1px solid rgba(14,22,16,.04); transition:background .2s; }
+.queue-item:last-child { border:none; }
+.queue-item:hover { background:var(--bg); }
+.queue-thumb { width:48px; height:48px; border-radius:var(--r-sm); object-fit:cover; background:var(--bg); border:1px solid var(--border); flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem; overflow:hidden; }
+.queue-thumb img { width:100%; height:100%; object-fit:cover; }
+.queue-info { flex:1; min-width:0; }
+.queue-name { font-size:.85rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.queue-size { font-size:.7rem; color:var(--mist); margin-top:.15rem; }
+.queue-status { flex-shrink:0; }
+.queue-remove { background:none; border:none; cursor:pointer; color:var(--mist); font-size:1rem; padding:.25rem; border-radius:50%; transition:all .2s; flex-shrink:0; }
+.queue-remove:hover { background:var(--danger-bg); color:var(--danger); }
+.queue-progress { width:100%; height:3px; background:var(--border); border-radius:2px; margin-top:.4rem; overflow:hidden; }
+.queue-progress-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,#52C48A,#235C3F); width:0%; transition:width .3s; }
+
+/* SUMMARY */
+.summary-card { background:#fff; border:1px solid rgba(52,168,112,.25); border-radius:var(--r-lg); padding:1.4rem; display:none; margin-bottom:1.5rem; }
+.summary-card h3 { margin-bottom:1rem; font-size:.95rem; color:var(--green); }
+.summary-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+@media(max-width:600px){ .summary-grid{grid-template-columns:1fr;} }
+.summary-stat { text-align:center; }
+.summary-stat .n { font-family:var(--ff-head); font-size:2rem; color:var(--green); line-height:1; }
+.summary-stat .l { font-size:.72rem; color:var(--mist); text-transform:uppercase; letter-spacing:.06em; margin-top:.2rem; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><span class="g">eTIMS</span><span class="b">Concierge</span></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <a href="dashboard.html" class="nav-item"><span class="ico">📊</span> Dashboard</a>
+      <button class="nav-item active"><span class="ico">📸</span> Upload Receipts</button>
+      <div class="nav-section">Account</div>
+      <a href="index.html" class="nav-item"><span class="ico">🏠</span> Home</a>
+      <button class="nav-item" onclick="doLogout()"><span class="ico">🚪</span> Logout</button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-chip">
+        <div class="avatar" id="avatarEl">?</div>
+        <div class="user-info">
+          <div class="user-name" id="userNameEl">Loading...</div>
+          <div class="user-org"  id="userOrgEl">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle"><span></span><span></span><span></span></button>
+      <div class="topbar-title">Upload Receipts</div>
+      <a href="dashboard.html" class="btn btn-secondary" style="padding:.4rem .9rem;font-size:.8rem;">← Dashboard</a>
+    </div>
+
+    <div class="page">
+
+      <div class="alert alert-error" id="pageErr" style="margin-bottom:1rem;"><span id="pageErrTxt"></span></div>
+
+      <!-- DROP ZONE -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.pdf" multiple/>
+        <span class="big-ico">📂</span>
+        <h2>Drop receipts here or click to browse</h2>
+        <p>Upload up to 20 files at once</p>
+        <p class="limits">JPG • PNG • PDF &nbsp;|&nbsp; Max 10MB per file</p>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="summary-card" id="summaryCard">
+        <h3>✅ Upload Complete</h3>
+        <div class="summary-grid">
+          <div class="summary-stat"><div class="n" id="sumTotal">0</div><div class="l">Total Files</div></div>
+          <div class="summary-stat"><div class="n" id="sumSuccess">0</div><div class="l">Uploaded</div></div>
+          <div class="summary-stat"><div class="n" id="sumFailed">0</div><div class="l">Failed</div></div>
+        </div>
+        <div style="margin-top:1rem;display:flex;gap:.75rem;">
+          <a href="dashboard.html" class="btn btn-primary" style="font-size:.875rem;">View Dashboard →</a>
+          <button class="btn btn-secondary" style="font-size:.875rem;" onclick="resetQueue()">Upload More</button>
+        </div>
+      </div>
+
+      <!-- QUEUE -->
+      <div class="queue-section" id="queueSection">
+        <div class="queue-header">
+          <h3>📋 Queue (<span id="queueCount">0</span> files)</h3>
+          <div class="queue-actions">
+            <button class="btn btn-secondary" style="font-size:.8rem;padding:.45rem 1rem;" onclick="clearQueue()">Clear All</button>
+            <button class="btn btn-primary" style="font-size:.8rem;padding:.45rem 1rem;" id="uploadAllBtn" onclick="uploadAll()">Upload All →</button>
+          </div>
+        </div>
+        <div class="queue-list" id="queueList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toastIcon">✓</span><span id="toastMsg"></span></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const _db=window.supabase.createClient(
+  'https://lreoqxryryoaxpirefwn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZW9xeHJ5cnlvYXhwaXJlZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzc5MTQsImV4cCI6MjA4ODI1MzkxNH0.OwfIjz4bI02noE6gpleBPKz_V6dmZvaoCrJIzLBNaQk'
+);
+
+let userOrg=null;
+let queue=[]; // {id, file, status:'ready'|'uploading'|'done'|'failed', thumb}
+let uploadStats={total:0,success:0,failed:0};
+
+async function init(){
+  const {data:{session}}=await _db.auth.getSession();
+  if(!session){location.href='login.html';return;}
+  const {data:prof}=await _db.from('profiles').select('*,organizations(*)').eq('id',session.user.id).maybeSingle();
+  if(prof){
+    userOrg=prof.organizations;
+    const name=prof.full_name||session.user.email;
+    const ini=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('avatarEl').textContent=ini;
+    document.getElementById('userNameEl').textContent=name;
+    document.getElementById('userOrgEl').textContent=userOrg?.name||'—';
+  }
+}
+
+// DROP ZONE
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop',e=>{e.preventDefault();dropZone.classList.remove('drag');addFiles(e.dataTransfer.files);});
+fileInput.addEventListener('change',function(){addFiles(this.files);this.value='';});
+
+function addFiles(files){
+  const VALID=['image/jpeg','image/jpg','image/png','application/pdf'];
+  let added=0, skipped=0;
+  Array.from(files).forEach(file=>{
+    if(queue.length>=20){showToast('Max 20 files at once.',true);return;}
+    if(!VALID.includes(file.type)){skipped++;return;}
+    if(file.size>10*1024*1024){skipped++;showToast(file.name+' is over 10MB.',true);return;}
+    const id='f_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+    queue.push({id,file,status:'ready',thumb:null});
+    added++;
+    // Generate thumbnail
+    if(file.type.startsWith('image/')){
+      const reader=new FileReader();
+      reader.onload=e=>{
+        const item=queue.find(x=>x.id===id);
+        if(item){item.thumb=e.target.result;renderQueue();}
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+  if(skipped) showToast(skipped+' file(s) skipped (wrong type).',true);
+  renderQueue();
+  if(added) document.getElementById('summaryCard').style.display='none';
+}
+
+function renderQueue(){
+  const section=document.getElementById('queueSection');
+  const list=document.getElementById('queueList');
+  document.getElementById('queueCount').textContent=queue.length;
+  if(!queue.length){section.style.display='none';return;}
+  section.style.display='block';
+  list.innerHTML=queue.map(item=>`
+    <div class="queue-item" id="qi_${item.id}">
+      <div class="queue-thumb">
+        ${item.thumb?`<img src="${item.thumb}" alt=""/>`:item.file.type==='application/pdf'?'📄':'🖼'}
+      </div>
+      <div class="queue-info">
+        <div class="queue-name">${esc(item.file.name)}</div>
+        <div class="queue-size">${(item.file.size/1024/1024).toFixed(2)} MB</div>
+        ${item.status==='uploading'?'<div class="queue-progress"><div class="queue-progress-fill" id="qp_'+item.id+'" style="width:50%"></div></div>':''}
+      </div>
+      <div class="queue-status">${statusBadge(item.status)}</div>
+      ${item.status==='ready'?`<button class="queue-remove" onclick="removeFromQueue('${item.id}')">✕</button>`:''}
+    </div>`).join('');
+}
+
+function statusBadge(s){
+  const map={ready:'badge-gray',uploading:'badge-blue',done:'badge-green',failed:'badge-red'};
+  const lbl={ready:'Ready',uploading:'Uploading...',done:'✓ Done',failed:'✕ Failed'};
+  return `<span class="badge ${map[s]||'badge-gray'}">${lbl[s]||s}</span>`;
+}
+
+function removeFromQueue(id){
+  queue=queue.filter(x=>x.id!==id);
+  renderQueue();
+}
+
+function clearQueue(){
+  queue=[];
+  renderQueue();
+}
+
+async function uploadAll(){
+  if(!userOrg?.id){showErr('Organisation not loaded. Please refresh.');return;}
+  const ready=queue.filter(x=>x.status==='ready');
+  if(!ready.length){showToast('No files ready to upload.',true);return;}
+  document.getElementById('uploadAllBtn').disabled=true;
+  document.getElementById('uploadAllBtn').textContent='Uploading...';
+  uploadStats={total:ready.length,success:0,failed:0};
+  for(const item of ready){
+    item.status='uploading';
+    renderQueue();
+    try {
+      const ext=item.file.name.split('.').pop();
+      const path=userOrg.id+'/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
+      const {error:storErr}=await _db.storage.from('receipts').upload(path,item.file,{upsert:false});
+      if(storErr) throw storErr;
+      const {data:{publicUrl}}=_db.storage.from('receipts').getPublicUrl(path);
+      const name=item.file.name.replace(/\.[^.]+$/,'');
+      const {error:dbErr}=await _db.from('receipts').insert({organization_id:userOrg.id,image_url:publicUrl,supplier_name:name,processing_status:'pending'});
+      if(dbErr) throw dbErr;
+      item.status='done';
+      uploadStats.success++;
+    } catch(err){
+      item.status='failed';
+      uploadStats.failed++;
+      console.error('Upload failed for',item.file.name,err);
+    }
+    renderQueue();
+  }
+  showSummary();
+  document.getElementById('uploadAllBtn').disabled=false;
+  document.getElementById('uploadAllBtn').textContent='Upload All →';
+}
+
+function showSummary(){
+  document.getElementById('sumTotal').textContent=uploadStats.total;
+  document.getElementById('sumSuccess').textContent=uploadStats.success;
+  document.getElementById('sumFailed').textContent=uploadStats.failed;
+  document.getElementById('summaryCard').style.display='block';
+  document.getElementById('summaryCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+  showToast('✅ Uploaded '+uploadStats.success+' of '+uploadStats.total+' receipts!');
+}
+
+function resetQueue(){
+  queue=[];
+  uploadStats={total:0,success:0,failed:0};
+  document.getElementById('summaryCard').style.display='none';
+  renderQueue();
+}
+
+async function doLogout(){await _db.auth.signOut();location.href='login.html';}
+
+document.getElementById('menuToggle').addEventListener('click',()=>document.getElementById('sidebar').classList.toggle('open'));
+
+function showToast(msg,isError=false){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  document.getElementById('toastIcon').textContent=isError?'✕':'✓';
+  t.style.borderLeftColor=isError?'var(--danger)':'var(--green-l)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),4000);
+}
+function showErr(msg){const el=document.getElementById('pageErr');document.getElementById('pageErrTxt').textContent=msg;el.classList.add('show');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+init();
+</script>
+</body>
+</html>
