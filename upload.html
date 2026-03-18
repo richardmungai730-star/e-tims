@@ -344,6 +344,14 @@ function clearQueue(){
   renderQueue();
 }
 
+/* ═══════════════════════════════════════════════════════════
+   FULL PROCESSING PIPELINE
+   Step 1: Upload to storage
+   Step 2: OCR (free Tesseract.js first, paid APIs commented out)
+   Step 3: Save extracted data to Supabase
+   Step 4: Submit to KRA eTIMS for approval
+═══════════════════════════════════════════════════════════ */
+
 async function uploadAll(){
   if(!userOrg?.id){showErr('Organisation not loaded. Please refresh.');return;}
   const ready=queue.filter(x=>x.status==='ready');
@@ -351,88 +359,216 @@ async function uploadAll(){
   document.getElementById('uploadAllBtn').disabled=true;
   document.getElementById('uploadAllBtn').textContent='Uploading...';
   uploadStats={total:ready.length,success:0,failed:0};
+
   for(const item of ready){
     item.status='uploading';
     renderQueue();
+    updatePipelineStep(item.id, 1); // Show step 1 active
+
     try {
-      // 1. Upload file to Supabase storage
+      /* ─────────────────────────────────────
+         STEP 1: Upload file to Supabase storage
+      ───────────────────────────────────── */
+      showToast('📤 Step 1/4: Uploading file...');
       const ext=item.file.name.split('.').pop();
       const path=userOrg.id+'/'+Date.now()+'_'+Math.random().toString(36).slice(2)+'.'+ext;
       const {error:storErr}=await _db.storage.from('receipts').upload(path,item.file,{upsert:false});
       if(storErr) throw storErr;
       const {data:{publicUrl}}=_db.storage.from('receipts').getPublicUrl(path);
+      console.log('✅ Step 1 done — file uploaded:', publicUrl);
+      updatePipelineStep(item.id, 2);
 
-      // 2. Run OCR with Claude AI
-      showToast('🤖 AI reading receipt...');
-      const ocrData = await runOCR(item.file);
-      console.log('OCR result:', ocrData);
+      /* ─────────────────────────────────────
+         STEP 2: OCR — Extract data from receipt
+         Priority order:
+         1. Tesseract.js (FREE — used by default)
+         2. Claude AI API (PAID — uncomment when ready)
+         3. Google Vision API (PAID — uncomment when ready)
+         4. AWS Textract (PAID — uncomment when ready)
+      ───────────────────────────────────── */
+      showToast('🔍 Step 2/4: Reading receipt with OCR...');
+      let ocrData = {};
 
-      // 3. Save to database with extracted data
+      /* ── FREE: Tesseract.js OCR ── */
+      ocrData = await ocrWithTesseract(item.file);
+      console.log('✅ Step 2 done — OCR result:', ocrData);
+
+      /* ── PAID: Claude AI OCR (uncomment when you have API key) ──
+      // const CLAUDE_API_KEY = 'sk-ant-REPLACE_WITH_YOUR_KEY';
+      // ocrData = await ocrWithClaude(item.file, CLAUDE_API_KEY);
+      ── END Claude AI OCR ── */
+
+      /* ── PAID: Google Vision OCR (uncomment when you have API key) ──
+      // const GOOGLE_API_KEY = 'REPLACE_WITH_YOUR_GOOGLE_KEY';
+      // ocrData = await ocrWithGoogleVision(item.file, GOOGLE_API_KEY);
+      ── END Google Vision OCR ── */
+
+      /* ── PAID: AWS Textract (uncomment when you have AWS credentials) ──
+      // const AWS_ACCESS_KEY = 'REPLACE_WITH_AWS_ACCESS_KEY';
+      // const AWS_SECRET_KEY = 'REPLACE_WITH_AWS_SECRET_KEY';
+      // ocrData = await ocrWithAWSTextract(item.file, AWS_ACCESS_KEY, AWS_SECRET_KEY);
+      ── END AWS Textract ── */
+
+      updatePipelineStep(item.id, 3);
+
+      /* ─────────────────────────────────────
+         STEP 3: Save to Supabase database
+      ───────────────────────────────────── */
+      showToast('💾 Step 3/4: Saving data...');
       const record = {
         organization_id: userOrg.id,
-        image_url: publicUrl,
-        supplier_name: ocrData.supplier_name || item.file.name.replace(/\.[^.]+$/,''),
-        supplier_pin:  ocrData.supplier_pin  || null,
-        amount:        ocrData.amount        || null,
-        receipt_date:  ocrData.receipt_date  || null,
+        image_url:        publicUrl,
+        supplier_name:    ocrData.supplier_name || item.file.name.replace(/\.[^.]+$/,''),
+        supplier_pin:     ocrData.supplier_pin  || null,
+        amount:           ocrData.amount        || null,
+        receipt_date:     ocrData.receipt_date  || null,
         processing_status: 'processing',
-        notes: ocrData.notes || null
+        notes:            ocrData.notes         || null,
       };
       const {data:inserted, error:dbErr}=await _db.from('receipts').insert(record).select().single();
       if(dbErr) throw dbErr;
+      console.log('✅ Step 3 done — saved to database, id:', inserted.id);
+      updatePipelineStep(item.id, 4);
 
-      // 4. Submit to KRA eTIMS
-      if(window.KRA && KRA.config.token !== 'PASTE_YOUR_KRA_TOKEN_HERE') {
-        showToast('📤 Submitting to KRA...');
-        const kraResult = await KRA.submitReceipt(inserted);
-        if(kraResult.success) {
-          // Update record with KRA invoice number
-          await _db.from('receipts').update({
-            processing_status: 'completed',
-            notes: 'KRA Invoice: ' + (kraResult.invcNo || '') + ' | Sig: ' + (kraResult.rcptSign || '')
-          }).eq('id', inserted.id);
-          showToast('✅ Submitted to KRA! Invoice: ' + kraResult.invcNo);
-        } else {
-          // KRA failed — still mark as completed locally
-          await _db.from('receipts').update({
-            processing_status: 'completed',
-            notes: 'KRA Error: ' + kraResult.error
-          }).eq('id', inserted.id);
-          console.warn('KRA submission failed:', kraResult.error);
-        }
+      /* ─────────────────────────────────────
+         STEP 4: Submit to KRA eTIMS for approval
+         This runs automatically once KRA token is set
+      ───────────────────────────────────── */
+      showToast('📋 Step 4/4: Submitting to KRA eTIMS...');
+      const kraResult = await submitToKRA(inserted);
+
+      if(kraResult.success){
+        await _db.from('receipts').update({
+          processing_status: 'completed',
+          notes: 'KRA Invoice No: ' + (kraResult.invcNo||'N/A') +
+                 ' | Signature: '   + (kraResult.rcptSign||'N/A'),
+        }).eq('id', inserted.id);
+        showToast('✅ KRA approved! Invoice: ' + (kraResult.invcNo||'Pending token'));
+        console.log('✅ Step 4 done — KRA approved:', kraResult);
       } else {
-        // No KRA token yet — just mark completed
-        await _db.from('receipts').update({processing_status:'completed'}).eq('id',inserted.id);
+        await _db.from('receipts').update({
+          processing_status: 'completed',
+          notes: kraResult.reason || 'Saved locally — KRA token pending',
+        }).eq('id', inserted.id);
+        console.log('ℹ️ Step 4 — KRA pending:', kraResult.reason);
       }
 
       item.status='done';
       uploadStats.success++;
+
     } catch(err){
       item.status='failed';
       uploadStats.failed++;
-      console.error('Upload failed for',item.file.name,err);
+      console.error('❌ Pipeline failed for', item.file.name, err);
+      showToast('Failed: ' + err.message, true);
     }
     renderQueue();
   }
+
   showSummary();
   document.getElementById('uploadAllBtn').disabled=false;
   document.getElementById('uploadAllBtn').textContent='Upload All →';
 }
 
-/* ── Claude AI OCR ── */
-async function runOCR(file) {
+/* ═══════════════════════════════════
+   PIPELINE STEP INDICATOR
+═══════════════════════════════════ */
+function updatePipelineStep(itemId, step){
+  // Visual feedback per queue item
+  const el = document.getElementById('qi_'+itemId);
+  if(!el) return;
+  const steps = ['Upload','OCR','Save','KRA'];
+  const badge = el.querySelector('.queue-status');
+  if(badge) badge.innerHTML = '<span class="badge badge-blue">⚙ '+steps[step-1]+'...</span>';
+}
+
+/* ═══════════════════════════════════
+   OCR ENGINE 1 — FREE: Tesseract.js
+   No API key needed. Works offline.
+   Accuracy: Good for printed receipts
+═══════════════════════════════════ */
+async function ocrWithTesseract(file){
   try {
-    // Convert file to base64
+    // Only works for images, not PDFs
+    if(file.type === 'application/pdf'){
+      console.log('Tesseract: PDF detected — skipping OCR, use Claude for PDFs');
+      return {};
+    }
+
+    // Load Tesseract from CDN if not already loaded
+    if(!window.Tesseract){
+      await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js');
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const result = await Tesseract.recognize(imageUrl, 'eng', {
+      logger: m => { if(m.status === 'recognizing text') console.log('OCR progress:', Math.round(m.progress*100)+'%'); }
+    });
+    URL.revokeObjectURL(imageUrl);
+
+    const text = result.data.text;
+    console.log('Tesseract raw text:', text);
+
+    // Parse the extracted text to find receipt fields
+    return parseTesseractText(text);
+
+  } catch(err){
+    console.warn('Tesseract OCR failed:', err.message);
+    return {};
+  }
+}
+
+function parseTesseractText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let data = { supplier_name:null, supplier_pin:null, amount:null, receipt_date:null, notes:null };
+
+  // Supplier name — usually first non-empty line
+  if(lines[0]) data.supplier_name = lines[0];
+
+  // KRA PIN — format: letter + 9 digits + letter e.g. A012345678B
+  const pinMatch = text.match(/[A-Z][0-9]{9}[A-Z]/);
+  if(pinMatch) data.supplier_pin = pinMatch[0];
+
+  // Amount — look for KES, Ksh, or large numbers
+  const amtMatch = text.match(/(?:KES|Ksh|Kshs?|Total)[^\d]*([\d,]+\.?\d{0,2})/i);
+  if(amtMatch) data.amount = parseFloat(amtMatch[1].replace(/,/g,''));
+
+  // Date — DD/MM/YYYY or DD-MM-YYYY or YYYY-MM-DD
+  const dateMatch = text.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if(dateMatch){
+    const [,d,m,y] = dateMatch;
+    const year = y.length===2 ? '20'+y : y;
+    data.receipt_date = `${year}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+  }
+
+  return data;
+}
+
+/* ═══════════════════════════════════
+   OCR ENGINE 2 — PAID: Claude AI
+   Uncomment and add API key to use.
+   Accuracy: Excellent (95%+)
+   Cost: ~KES 0.50 per receipt
+═══════════════════════════════════ */
+/*
+async function ocrWithClaude(file, apiKey){
+  try {
     const base64 = await fileToBase64(file);
-    const mediaType = file.type === 'application/pdf' ? 'application/pdf' : 
-                      file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    const mediaType = file.type === 'application/pdf' ? 'application/pdf'
+                    : file.type === 'image/png'       ? 'image/png'
+                    : 'image/jpeg';
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 500,
+        model: 'claude-haiku-4-5-20251001', // cheapest model
+        max_tokens: 400,
         messages: [{
           role: 'user',
           content: [
@@ -442,45 +578,130 @@ async function runOCR(file) {
             },
             {
               type: 'text',
-              text: `Extract receipt data and respond ONLY with JSON, no other text:
-{
-  "supplier_name": "business name on receipt",
-  "supplier_pin": "KRA PIN if visible e.g. P051234567A or null",
-  "amount": total amount as number without commas or null,
-  "receipt_date": "YYYY-MM-DD format or null",
-  "notes": "any other useful info or null"
-}
-If you cannot read the receipt clearly, return nulls for those fields.`
+              text: 'Extract receipt data. Respond ONLY with JSON:
+{"supplier_name":"...","supplier_pin":"KRA PIN or null","amount":0.00,"receipt_date":"YYYY-MM-DD or null","notes":"or null"}'
             }
           ]
         }]
       })
     });
 
-    if(!response.ok) {
-      console.warn('OCR API error:', response.status);
-      return {};
-    }
-
+    if(!response.ok) throw new Error('Claude API error: ' + response.status);
     const data = await response.json();
     const text = data.content?.[0]?.text || '{}';
-    
-    // Parse JSON from response
-    const clean = text.replace(/```json|```/g, '').trim();
-    return JSON.parse(clean);
+    return JSON.parse(text.replace(/```json|```/g,'').trim());
 
-  } catch(err) {
-    console.warn('OCR failed (non-fatal):', err);
-    return {}; // Return empty — receipt still saves, just without extracted data
+  } catch(err){
+    console.warn('Claude OCR failed:', err.message);
+    return {};
+  }
+}
+*/
+
+/* ═══════════════════════════════════
+   OCR ENGINE 3 — PAID: Google Vision
+   Uncomment and add API key to use.
+   Accuracy: Excellent
+   Cost: $1.50 per 1000 receipts
+═══════════════════════════════════ */
+/*
+async function ocrWithGoogleVision(file, apiKey){
+  try {
+    const base64 = await fileToBase64(file);
+    const response = await fetch(
+      `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          requests: [{
+            image: { content: base64 },
+            features: [{ type: 'TEXT_DETECTION' }]
+          }]
+        })
+      }
+    );
+    const data = await response.json();
+    const text = data.responses?.[0]?.fullTextAnnotation?.text || '';
+    return parseTesseractText(text); // Reuse same parser
+  } catch(err){
+    console.warn('Google Vision OCR failed:', err.message);
+    return {};
+  }
+}
+*/
+
+/* ═══════════════════════════════════
+   OCR ENGINE 4 — PAID: AWS Textract
+   Uncomment and add credentials to use.
+   Accuracy: Excellent, best for tables
+   Cost: $1.50 per 1000 receipts
+═══════════════════════════════════ */
+/*
+async function ocrWithAWSTextract(file, accessKey, secretKey){
+  // NOTE: AWS Textract requires a server-side proxy for security
+  // Direct browser calls are not recommended for production
+  // Set up a simple proxy endpoint and call it here
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await fetch('/api/textract', {
+      method: 'POST',
+      headers: {
+        'x-aws-access-key': accessKey,
+        'x-aws-secret-key': secretKey,
+      },
+      body: formData
+    });
+    const data = await response.json();
+    return data.extracted || {};
+  } catch(err){
+    console.warn('AWS Textract failed:', err.message);
+    return {};
+  }
+}
+*/
+
+/* ═══════════════════════════════════
+   KRA eTIMS SUBMISSION — STEP 4
+   Automatically submits after OCR
+═══════════════════════════════════ */
+async function submitToKRA(receipt){
+  // Check if KRA token is configured
+  if(!window.KRA || KRA.config.token === 'PASTE_YOUR_KRA_TOKEN_HERE'){
+    return { success:false, reason:'KRA token not configured yet — receipt saved locally' };
+  }
+
+  // Check receipt has minimum required data
+  if(!receipt.amount){
+    return { success:false, reason:'Amount required for KRA submission' };
+  }
+
+  try {
+    const result = await KRA.submitReceipt(receipt);
+    return result;
+  } catch(err){
+    return { success:false, reason:'KRA submission error: '+err.message };
   }
 }
 
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+/* ═══════════════════════════════════
+   HELPERS
+═══════════════════════════════════ */
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r=new FileReader();
+    r.onload=()=>resolve(r.result.split(',')[1]);
+    r.onerror=reject;
+    r.readAsDataURL(file);
+  });
+}
+
+function loadScript(src){
+  return new Promise((resolve,reject)=>{
+    const s=document.createElement('script');
+    s.src=src; s.onload=resolve; s.onerror=reject;
+    document.head.appendChild(s);
   });
 }
 
