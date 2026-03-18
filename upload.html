@@ -416,14 +416,13 @@ async function uploadAll(){
       ───────────────────────────────────── */
       showToast('💾 Step 3/4: Saving data...');
       const record = {
-        organization_id: userOrg.id,
+        organization_id:  userOrg.id,
         image_url:        publicUrl,
         supplier_name:    ocrData.supplier_name || item.file.name.replace(/\.[^.]+$/,''),
         supplier_pin:     ocrData.supplier_pin  || null,
         amount:           ocrData.amount        || null,
         receipt_date:     ocrData.receipt_date  || null,
         processing_status: 'processing',
-        notes:            ocrData.notes         || null,
       };
       const {data:inserted, error:dbErr}=await _db.from('receipts').insert(record).select().single();
       if(dbErr) throw dbErr;
