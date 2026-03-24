@@ -681,22 +681,53 @@ async function ocrWithAWSTextract(file, accessKey, secretKey){
    KRA eTIMS SUBMISSION — STEP 4
    Automatically submits after OCR
 ═══════════════════════════════════ */
-async function submitToKRA(receipt){
-  // Check if KRA token is configured
-  if(!window.KRA || KRA.config.token === 'PASTE_YOUR_KRA_TOKEN_HERE'){
-    return { success:false, reason:'KRA token not configured yet — receipt saved locally' };
-  }
+/* ─────────────────────────────────────────────────
+   KRA SUBMISSION via Supabase Edge Function
+   (avoids CORS — browser cannot call KRA API directly)
+───────────────────────────────────────────────── */
+const KRA_PROXY = 'https://lreoqxryryoaxpirefwn.supabase.co/functions/v1/kra-submit';
+const SUPA_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZW9xeHJ5cnlvYXhwaXJlZnduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI2Nzc5MTQsImV4cCI6MjA4ODI1MzkxNH0.OwfIjz4bI02noE6gpleBPKz_V6dmZvaoCrJIzLBNaQk';
 
-  // Check receipt has minimum required data
-  if(!receipt.amount){
+async function submitToKRA(receipt){
+  // Receipt must have an amount
+  if(!receipt.amount || parseFloat(receipt.amount) <= 0){
     return { success:false, reason:'Amount required for KRA submission' };
   }
 
   try {
-    const result = await KRA.submitReceipt(receipt);
-    return result;
+    console.log('Calling KRA proxy with receipt:', receipt.id);
+    const res = await fetch(KRA_PROXY, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + SUPA_ANON,
+      },
+      body: JSON.stringify({ action: 'submit', receipt })
+    });
+
+    const data = await res.json();
+    console.log('KRA proxy response:', data);
+
+    if(data.error){
+      return { success:false, reason: data.error };
+    }
+
+    if(data.resultCd === '000'){
+      return {
+        success:   true,
+        invcNo:    data.data?.invcNo    || 'N/A',
+        rcptSign:  data.data?.rcptSign  || 'N/A',
+        message:   data.resultMsg
+      };
+    } else {
+      return {
+        success: false,
+        reason:  `KRA Error ${data.resultCd}: ${data.resultMsg || 'Submission rejected'}`
+      };
+    }
+
   } catch(err){
-    return { success:false, reason:'KRA submission error: '+err.message };
+    return { success:false, reason:'Network error: ' + err.message };
   }
 }
 
