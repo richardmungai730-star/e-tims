@@ -272,6 +272,22 @@ async function init(){
     document.getElementById('userNameEl').textContent=name;
     document.getElementById('userOrgEl').textContent=userOrg?.name||'—';
   }
+
+  // Initialize KRA eTIMS device on load
+  if(window.KRA){
+    const alreadyInit = localStorage.getItem('kra_initialized');
+    if(!alreadyInit){
+      console.log('Initializing KRA eTIMS device...');
+      const initResult = await KRA.initialize();
+      if(initResult.success){
+        showToast('✅ KRA eTIMS device initialized!');
+      } else {
+        console.warn('KRA init warning:', initResult.error);
+      }
+    } else {
+      console.log('KRA device already initialized');
+    }
+  }
 }
 
 // DROP ZONE
@@ -748,16 +764,18 @@ init();
 ═══════════════════════════════════════════════════ */
 
 const KRA_CONFIG = {
-  tin:          'AO21109334M',
-  serial:       'ETIMS-001-2026',
-  tis_name:     'eTIMS Concierge',
-  tis_version:  '1.0.0',
-  token:        'PASTE_YOUR_KRA_TOKEN_HERE', // ← Replace when KRA sends token
-  
-  // Sandbox (testing) — switch to live URL when KRA approves
+  tin:          'A021109334M',       // Your KRA PIN
+  serial:       'ETIMS-001-2026',    // Your device serial number
+  tis_name:     'eTIMS Concierge',   // Your TIS name
+  tis_version:  '1.0.0',            // TIS version
+  token:        'KRATK04_e3ebe',     // ✅ KRA Integration Token (Sandbox)
+  bhf_id:       '00',               // Branch ID
+  integrator_pin: 'P051109164C',    // KRA Certified Integrator PIN
+
+  // ✅ SANDBOX (testing) — active now
   base_url:     'https://etims-sbx.kra.go.ke/etims-api',
-  
-  // Live URL (uncomment when ready for production)
+
+  // 🔜 LIVE (uncomment when KRA approves for production)
   // base_url:  'https://etims.kra.go.ke/etims-api',
 };
 
